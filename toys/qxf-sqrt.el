@@ -11,4 +11,4 @@
 	(prin1 (format "Time cost: %f. Loop time: %d." (- (float-time) ts) count))
 	result))
 
-(prin1 (format "%f %f" (qxf-sqrt 2) (sqrt 2)))
+(prin1 (format "%f %f" (qxf-sqrt 999987654) (sqrt 2)))
