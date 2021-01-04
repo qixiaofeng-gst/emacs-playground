@@ -154,3 +154,11 @@
 (let ((i 0)) (while (< i 10) (print i) (setq i (1+ i))))
 (float-time)
 (symbol-plist 'defun)
+
+
+(eval 'load-path)
+(nth 1 load-path)
+(safe-length load-path)
+(let ((num 0)) (while (< num (safe-length load-path))
+		   (print (nth num load-path)) (setq num (1+ num)))
+    num)
