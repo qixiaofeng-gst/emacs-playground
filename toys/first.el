@@ -1,6 +1,4 @@
-; Perhaps we only have line comment?
-
-(print 'world)
+(print 'world)			  ; Perhaps we only have line comment?
 
 (list 1 2 3)
 (list nil t)				;
@@ -174,5 +172,25 @@
     num)
 
 ; Learn the two special escaped keys (\C- and \M-):
-(print "\M-x cannot print the special keys.")
-(print "\C-x ^x")
+(print "\M-x | Cannot print the special keys.")
+(print "\C-x | ^x")
+(print "\S-x | Yeah it is a uppercase X.")
+(print (kbd "C-x"))
+(print "Modifier Keys: Control-modified is case-insensitive.")
+(print "Modifier Keys: All other modifiers are case-sensitive.")
+(print "Modifier Keys: Meta-modifier.")
+(print "Modifier Keys: Hyper, Super and Alt-modifiers are rare on keyboard.")
+(print "Modifier Keys: Use C-x @ s/h/a to prefix Hyper, Super and Alt modifiers.")
+
+; Overwrite a key-bind:
+(defun qxf-print () (interactive) (print "Dummy print."))
+(define-key global-map (kbd "C-x 1") 'qxf-print)
+
+(nth 0 (current-active-maps))
+(eval 'global-map)
+
+; Create a window:
+; TODO Insert text programmatically.
+; TODO Save to file.
+; TODO Auto load (create buffers and windows) at startup.
+
