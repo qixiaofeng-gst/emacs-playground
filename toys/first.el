@@ -45,6 +45,8 @@
 (length "Soulmate")
 (eval "\xe0\ ")
 (eval [1 2 3])
+
+; Access symbol slots:
 (symbol-function 'car)
 (symbol-name 'cons)
 
@@ -54,6 +56,7 @@
 (type-of (symbol-function 'car))
 (eval :test)
 
+; Simplest demo for function definition:
 (/ 1.0 2)
 (defun qxf-sqrt
     (a)
@@ -62,6 +65,7 @@
     (/ a 2.0)))
 (qxf-sqrt 1)
 
+; Simplest demo for flat workflow:
 (progn
   (setq x '(#1=(a) b #1#))
   (eq (nth 0 x) (nth 2 x)))
@@ -75,7 +79,7 @@
   (eq x (cadr x))
   x)
 
-
+; Type predictors:
 (atom x)
 (arrayp x)
 (bool-vector-p x)
@@ -128,6 +132,7 @@
 (null nil)
 (atom nil)
 
+; Demonstration for 'let' special form:
 (let ((x 1) (y 2) (z 3))
   (list x y z)
   (type-of x)
@@ -148,17 +153,26 @@
 (let ((the-ring (make-ring 10)))
   (dotimes (i 10) (ring-insert the-ring (format "item-%d" i)))
   the-ring)
+
+; Demonstration for 'dolist' loop:
 (dolist (i '(1 3 5 7 13 35 57 713 1335 3557 57713 7131335))
   (prin1 i))
 
+; Demonstration for 'while' loop:
 (let ((i 0)) (while (< i 10) (print i) (setq i (1+ i))))
+
+; Access system time:
 (float-time)
 (symbol-plist 'defun)
 
-
+; Package basic (load-path):
 (eval 'load-path)
 (nth 1 load-path)
 (safe-length load-path)
 (let ((num 0)) (while (< num (safe-length load-path))
 		   (print (nth num load-path)) (setq num (1+ num)))
     num)
+
+; Learn the two special escaped keys (\C- and \M-):
+(print "\M-x cannot print the special keys.")
+(print "\C-x ^x")
