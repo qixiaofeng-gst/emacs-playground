@@ -190,7 +190,18 @@
 (eval 'global-map)
 
 ; Create a window:
+; frame-selected-window &optional frame [Function]
+; split-window &optional window size side pixelwise [Function]
+; TODO Create IDE layout:
+;      1. Kill all other windows, leave only one window.
+;      2. Create all required windows and buffers, store them all in a list.
+(split-window nil 10 'right)
+; TODO Implement history for emacs.
+;      1. Save all opened buffers(user's files) into a config file.
+;      2. Load and auto open at emacs startup.
 ; TODO Insert text programmatically.
+;      1. Create buffer.
+;      2. Output something to buffer.
 ; TODO Save to file.
 ; TODO Auto load (create buffers and windows) at startup.
 
