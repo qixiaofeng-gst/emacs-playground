@@ -33,6 +33,7 @@
 ; 3. There have to be a (provide <feature-name-symbol>) line in the .el file.
 (require 'qxf-general)
 (require 'qxf-helm-gtags)
+(require 'qxf-make)
 
 ; Two really useful bindings: C-j newline; C-8 DEL.
 ; A tutorial for use Emacs as c-ide: https://tuhdo.github.io/c-ide.html
