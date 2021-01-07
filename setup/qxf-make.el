@@ -9,14 +9,14 @@
 
 ; TODO Make the editor 120+<number-columns>.
 ; TODO Sidebar for available buffers.
-
+; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column.
 (defun qxf-record-focus
     ()
     (interactive)
     (let
 	((-temp-string (format "\"%s\"\n" (buffer-file-name (current-buffer)))))
 	(with-temp-file qxf-focus-record (insert -temp-string))
-	)			; TODO Make the indent-sexp as I like.
+	)
     )
 (define-key global-map (kbd "C-c DEL") 'qxf-record-focus)
 (defun qxf-load-record
