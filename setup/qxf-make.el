@@ -6,13 +6,38 @@
 (defvar qxf-side-bar nil)
 (defvar qxf-string-cache "")
 
+; TODO ======= Implement line movement.
 ; TODO Sidebar for available buffers.
 ; TODO Hide the menu bar in qxf-general.el.
-; TODO Implement line movement.
-; TODO Make the editor 120+<number-columns>.
+; TODO Make the editor 120+<number-columns>. {count-lines start end [function]}
 ; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column.
 
 ; DONE Create copy and paste logic.
+; DONE Implement snippet insertion. e.g. command definition.
+
+; (beginning-of-line)
+
+(defun qxf-move-line-down
+    ()
+    (interactive)
+    (let
+	((-temp-string (delete-and-extract-region (line-beginning-position) (1+ (line-end-position)))))
+	(forward-line 1)
+	(insert -temp-string)
+	(forward-line -1))
+    :defun-end)
+(define-key global-map (kbd "C-c n") 'qxf-move-line-down)
+
+(defun qxf-move-line-up
+    ()
+    (interactive)
+    (let
+	((-temp-string (delete-and-extract-region (line-beginning-position) (1+ (line-end-position)))))
+	(forward-line -1)
+	(insert -temp-string)
+	(forward-line -1))
+    :defun-end)
+(define-key global-map (kbd "C-c p") 'qxf-move-line-up)
 
 (defun qxf-copy-region
     ()
@@ -84,10 +109,22 @@
 	(shell-command "echo Initialized shell area.")))
 (define-key global-map (kbd "C-c 0") 'qxf-open-mic-array)
 
+(defun qxf-insert-command
+    (-command-name)
+    (interactive "sCommand-name:")
+    (insert (format "(defun %s
+    ()
+    (interactive)
+    (prin1 \"Command placeholder.\")
+    :defun-end)
+(define-key global-map (kbd \"C-c t\") '%s)" -command-name -command-name))
+    :defun-end)
+(define-key global-map (kbd "C-c 9") 'qxf-insert-command)
+
 (defun qxf-set-c-offset
     ()
     (interactive)
     (set-variable 'c-basic-offset 4))
-(define-key global-map (kbd "C-c 9") 'qxf-set-c-offset)
+(define-key global-map (kbd "C-c 4") 'qxf-set-c-offset)
 
 (print "Loaded qxf-make.")

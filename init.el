@@ -1,5 +1,5 @@
-(defun qxf-msg (m) (print (format "[Msg by xiaofeng.qi]: %s" m)))
 (defvar qxf-timestamp (float-time))
+(defun qxf-msg (m) (print (format "[Msg by xiaofeng.qi]: %s" m)))
 (qxf-msg "Loading personal init.el.")
 
 ; Initialize 'straight'.
