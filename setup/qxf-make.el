@@ -6,13 +6,15 @@
 (defvar qxf-side-bar nil)
 (defvar qxf-string-cache "")
 
-; TODO ======= Implement line movement.
-; TODO Sidebar for available buffers.
-; TODO Hide the menu bar in qxf-general.el.
 ; TODO Make the editor 120+<number-columns>. {count-lines start end [function]}
+; TODO Add a cmake command.
+; TODO Sidebar for available buffers.
+; TODO Make the qxf-mic-array-root (actually is work-root) changeable.
 ; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column.
 
+; DONE Hide the menu bar in qxf-general.el.
 ; DONE Create copy and paste logic.
+; DONE Implement line movement.
 ; DONE Implement snippet insertion. e.g. command definition.
 
 ; (beginning-of-line)
