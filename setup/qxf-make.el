@@ -25,6 +25,7 @@
 ; DONE Make the editor 120+<number-columns>. {[function] count-lines start end}
 ; DONE Add a C-c a to jump to the line beginning.
 ; DONE Add a cmake command.
+; DONE Make line copy. [C-c d]
 
 ; {[function] buffer-list &optional frame}
 ; {[function] buffer-name &optional buffer}
@@ -66,8 +67,22 @@
     ()
     (interactive)
     (let
-	((*test (lambda (*test-string) (*print-to-side-bar (format "%s\n" *test-string)))))
-	(funcall *test "Hello test!"))
+	(
+	    (*to-print "Test results:\n")
+	    (*test
+		(lambda (*test-string)
+		    (setq *to-print
+			(concat *to-print
+			    (format "%s:%s\n" *test-string (*is-atomic-line *test-string))))
+		    )
+		)
+	    (*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
+	    )
+	(funcall *test "Hello test!")
+	(funcall *out (format "(numberp nil):%s" (numberp nil)))
+	(funcall *out (format "(numberp t):%s" (numberp t)))
+	(funcall *out (format "(string-match):%s" (string-match "\n" "teststring")))
+	(*print-to-side-bar *to-print))
     :defun-end)
 (define-key global-map (kbd "C-c t") 'qxf-test-is-atomic-line)
 
@@ -116,6 +131,24 @@
 	)
     :defun-end)
 (define-key global-map (kbd "C-c q") 'qxf-format-lisp)
+
+(defun qxf-duplicate-line
+    ()
+    (interactive)
+    (let
+	(
+	    (*point-a nil)
+	    (*point-b nil)
+	    )
+	(beginning-of-line)
+	(setq *point-a (point))
+	(re-search-forward "\n")
+	(setq *point-b (point))
+	(insert (buffer-substring-no-properties *point-a *point-b))
+	(forward-line -1)
+	)
+    :defun-end)
+(define-key global-map (kbd "C-c d") 'qxf-duplicate-line)
 
 (defun qxf-focus-line-beginning
     ()
