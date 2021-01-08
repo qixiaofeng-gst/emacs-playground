@@ -32,6 +32,47 @@
 ; {[function] buffer-modified-p &optional buffer}
 ; {[macro] with-current-buffer buffer-or-name body...}
 
+; WIP Align the outmost brackets pair.
+; TODO Align the 2, 3, ... brackets pair.
+; {[function] elt sequence index}
+; {[function] make-string count character &optional multibyte}
+; ?\(, ?\)
+
+(defun *format-form (*string-form)
+    (let
+	(
+	    (*+1 (elt *string-form 0))
+	    (*-1 (elt *string-form (- (length *string-form) 1))))
+	(if (and (eq *+1 ?\() (eq *-1 ?\)))
+	    (concat
+		*string-form
+		"\n=======\n"
+		)
+	    (format "Not a valid block. Start:[%c], end:[%c]. %s" *+1 *-1
+		"Expected start:[(], expected end:[)].")
+	    )
+	)
+    )
+
+(defun qxf-format-lisp
+    ()
+    (interactive)
+    (let
+	(
+	    (*point-a nil)
+	    (*point-b nil)
+	    )
+	(backward-sentence)
+	(setq *point-a (point))
+	(forward-sexp)
+	(setq *point-b (point))
+	(*print-to-side-bar
+	    (*format-form (buffer-substring-no-properties *point-a *point-b))
+	    )
+	)
+    :defun-end)
+(define-key global-map (kbd "C-c q") 'qxf-format-lisp)
+
 (defun qxf-focus-line-beginning
     ()
     (interactive)
@@ -184,5 +225,11 @@
 	(dolist (*buffer (buffer-list))
 	    (*render-entry *buffer)))
     :end-defun)
+
+(defun *print-to-side-bar (*message)
+    (with-current-buffer qxf-buffer-side-bar
+	(erase-buffer)
+	(insert (format "%s\n" (current-time-string)))
+	(insert *message)))
 
 (print "Loaded qxf-make.")
