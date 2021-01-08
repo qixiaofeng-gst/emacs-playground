@@ -62,7 +62,21 @@
 ; 2. Atomic line does not contain any "\n".
 ; ======= WIP =======
 (defun *is-atomic-line (*string-line)
-    t)
+    (let
+	(
+	    (*index (string-match "\n" *string-line))
+	    )
+	(if *index
+	    *index
+	    t
+	    )
+	)
+    )
+
+; {[Macro] defmacro name args [doc] [declare] body...}
+(defmacro qxf-stringify (*target)
+    `(print (quote ,*target)))
+(qxf-stringify (1 2 3))
 (defun qxf-test-is-atomic-line
     ()
     (interactive)
@@ -78,7 +92,10 @@
 		)
 	    (*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
 	    )
+	(funcall *test "\nHello \n test!")
 	(funcall *test "Hello test!")
+	(funcall *out "=======")
+	(princ '(1 2 3))
 	(funcall *out (format "(numberp nil):%s" (numberp nil)))
 	(funcall *out (format "(numberp t):%s" (numberp t)))
 	(funcall *out (format "(string-match):%s" (string-match "\n" "teststring")))
