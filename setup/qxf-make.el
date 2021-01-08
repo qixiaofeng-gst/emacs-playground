@@ -33,42 +33,86 @@
 ; {[macro] with-current-buffer buffer-or-name body...}
 
 ; WIP Align the outmost brackets pair.
+; TODO Validate the outmost begin line. 
+;      1. Only one open "(" allowed.
+;      2. If not valid, print message and jump to the second open "(".
 ; TODO Align the 2, 3, ... brackets pair.
 ; {[function] elt sequence index}
 ; {[function] make-string count character &optional multibyte}
+; {[Function] string-match regexp string &optional start}
+; {[Function] reverse sequence}
+; {[Special Form] progn forms...}
+; {[Special Form] setq [symbol form]...}
+; {[Macro] dotimes (var count [result]) body...}
+; {add-to-list}
 ; ?\(, ?\)
 
+; ======= WIP =======
+(defun *get-index-of-pair (*string *start)
+    0)
+(defun qxf-test-get-index-of-pair
+    ()
+    (interactive)
+    (prin1 "Command placeholder.")
+    :defun-end)
+(define-key global-map (kbd "C-c t") 'qxf-test-get-index-of-pair)
+
+; 1. Atomic line does not contain any open bracket(un-paired "(" or ")").
+; 2. Atomic line does not contain any "\n".
+; ======= WIP =======
+(defun *is-atomic-line (*string-line)
+    t)
+(defun qxf-test-is-atomic-line
+    ()
+    (interactive)
+    (let
+	((*test (lambda (*test-string) (*print-to-side-bar (format "%s\n" *test-string)))))
+	(funcall *test "Hello test!"))
+    :defun-end)
+(define-key global-map (kbd "C-c t") 'qxf-test-is-atomic-line)
+
+; ======= WIP =======
 (defun *format-form (*string-form)
     (let
 	(
+	    (*reversed (reverse *string-form))
+	    (*length (length *string-form))
+	    (*offset 0)
 	    (*+1 (elt *string-form 0))
 	    (*-1 (elt *string-form (- (length *string-form) 1))))
 	(if (and (eq *+1 ?\() (eq *-1 ?\)))
-	    (concat
-		*string-form
-		"\n=======\n"
+	    (progn
+		(setq *offset (string-match "\n" *reversed))
+		(setq *string-form
+		    (concat (substring *string-form 0 (- *length *offset)) ")"))
+		(concat
+		    *string-form
+		    "\n=======\n"
+		    )
 		)
 	    (format "Not a valid block. Start:[%c], end:[%c]. %s" *+1 *-1
 		"Expected start:[(], expected end:[)].")
 	    )
 	)
-    )
+    ) ; Here we should test with :end-defun
 
 (defun qxf-format-lisp
     ()
     (interactive)
     (let
 	(
+	    (*point-o (point))
 	    (*point-a nil)
 	    (*point-b nil)
 	    )
-	(backward-sentence)
-	(setq *point-a (point))
+	(re-search-backward "\n\(")
+	(setq *point-a (1+ (point)))
 	(forward-sexp)
 	(setq *point-b (point))
 	(*print-to-side-bar
 	    (*format-form (buffer-substring-no-properties *point-a *point-b))
 	    )
+	(goto-char *point-o)
 	)
     :defun-end)
 (define-key global-map (kbd "C-c q") 'qxf-format-lisp)
