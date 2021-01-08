@@ -6,7 +6,6 @@
 (defvar qxf-side-bar nil)
 (defvar qxf-string-cache "")
 
-; TODO Make the editor 120+<number-columns>. {count-lines start end [function]}
 ; TODO Add a cmake command.
 ; TODO Sidebar for available buffers.
 ; TODO Make the qxf-mic-array-root (actually is work-root) changeable.
@@ -16,8 +15,18 @@
 ; DONE Create copy and paste logic.
 ; DONE Implement line movement.
 ; DONE Implement snippet insertion. e.g. command definition.
+; DONE Make the editor 120+<number-columns>. {count-lines start end [function]}
+; DONE Add a C-c a to jump to the line beginning.
 
 ; (beginning-of-line)
+
+(defun qxf-focus-line-beginning
+    ()
+    (interactive)
+    (beginning-of-line)
+    (goto-char (- (re-search-forward "[^[:space:]]") 1))
+    :defun-end)
+(define-key global-map (kbd "C-c a") 'qxf-focus-line-beginning)
 
 (defun qxf-move-line-down
     ()
@@ -106,10 +115,18 @@
     (let
 	((-new-window (split-window nil -20 'below)))
 	(set-window-buffer -new-window "*Shell Command Output*")
-	(setq qxf-side-bar (split-window nil 120 'left))
+	(setq qxf-side-bar (split-window nil (+ 120 (-qxf-get-line-number-width)) 'left))
 	(set-window-buffer qxf-side-bar (get-buffer-create "*side-bar*"))
 	(shell-command "echo Initialized shell area.")))
 (define-key global-map (kbd "C-c 0") 'qxf-open-mic-array)
+
+(defun -qxf-get-line-number-width
+    ()
+    (+ 2 (length (format "%d" 
+		(count-lines (point-min) (point-max))
+		)
+	))
+    )
 
 (defun qxf-insert-command
     (-command-name)
