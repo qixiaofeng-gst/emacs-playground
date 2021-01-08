@@ -2,23 +2,35 @@
 
 (defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
-(defvar qxf-editor-window (frame-root-window))
-(defvar qxf-side-bar nil)
+(defvar qxf-buffer-side-bar (get-buffer-create "*side-bar*"))
+(defvar qxf-window-editor (frame-root-window))
+(defvar qxf-window-side-bar nil)
 (defvar qxf-string-cache "")
 
-; TODO Add a cmake command.
+; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
 ; TODO Sidebar for available buffers.
-; TODO Make the qxf-mic-array-root (actually is work-root) changeable.
-; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column.
+;      1. Show opened file buffers.
+;      2. Add [C-c <down>] and [C-c <up>] for editor switch.
+;      3. Perhaps use blur hook of editor window to referesh the side-bar.
+;      4. Side-bar content save and load.
+; TODO Implement the project concept.
+;      1. Make the qxf-mic-array-root (actually is work-root) changeable.
+;      2. Way for search the project root, perhaps a hidden config file.
+; TODO Local varialble rename.
 
 ; DONE Hide the menu bar in qxf-general.el.
 ; DONE Create copy and paste logic.
 ; DONE Implement line movement.
 ; DONE Implement snippet insertion. e.g. command definition.
-; DONE Make the editor 120+<number-columns>. {count-lines start end [function]}
+; DONE Make the editor 120+<number-columns>. {[function] count-lines start end}
 ; DONE Add a C-c a to jump to the line beginning.
+; DONE Add a cmake command.
 
-; (beginning-of-line)
+; {[function] buffer-list &optional frame}
+; {[function] buffer-name &optional buffer}
+; {[function] buffer-file-name &optional buffer}
+; {[function] buffer-modified-p &optional buffer}
+; {[macro] with-current-buffer buffer-or-name body...}
 
 (defun qxf-focus-line-beginning
     ()
@@ -89,21 +101,29 @@
 (defun qxf-focus-editor
     ()
     (interactive)
-    (select-window qxf-editor-window))
+    (*render-side-bar)
+    (select-window qxf-window-editor))
 (define-key global-map (kbd "C-c -") 'qxf-focus-editor)
 
 (defun qxf-focus-side-bar
     ()
     (interactive)
-    (select-window qxf-side-bar))
+    (*render-side-bar)
+    (select-window qxf-window-side-bar))
 (define-key global-map (kbd "C-c \\") 'qxf-focus-side-bar)
 
 (defun qxf-make-mic-array
     ()
     (interactive)
-    (qxf-focus-editor)
     (shell-command (format "date && cd %s/build && make -j 8 && ./listdevs" qxf-mic-array-root)))
 (define-key global-map (kbd "C-c 1") 'qxf-make-mic-array)
+
+(defun qxf-cmake-mic-array
+    ()
+    (interactive)
+    (shell-command (format "date && cd %s/build && cmake .." qxf-mic-array-root))
+    :defun-end)
+(define-key global-map (kbd "C-c 2") 'qxf-cmake-mic-array)
 
 (defun qxf-open-mic-array
     ()
@@ -115,18 +135,11 @@
     (let
 	((-new-window (split-window nil -20 'below)))
 	(set-window-buffer -new-window "*Shell Command Output*")
-	(setq qxf-side-bar (split-window nil (+ 120 (-qxf-get-line-number-width)) 'left))
-	(set-window-buffer qxf-side-bar (get-buffer-create "*side-bar*"))
+	(setq qxf-window-side-bar (split-window nil (+ 120 (*get-line-number-width)) 'left))
+	(set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
+	(*render-side-bar)
 	(shell-command "echo Initialized shell area.")))
 (define-key global-map (kbd "C-c 0") 'qxf-open-mic-array)
-
-(defun -qxf-get-line-number-width
-    ()
-    (+ 2 (length (format "%d" 
-		(count-lines (point-min) (point-max))
-		)
-	))
-    )
 
 (defun qxf-insert-command
     (-command-name)
@@ -145,5 +158,31 @@
     (interactive)
     (set-variable 'c-basic-offset 4))
 (define-key global-map (kbd "C-c 4") 'qxf-set-c-offset)
+
+(defun *render-entry (*buffer)
+    (let (
+	     (*buffer-name (buffer-name *buffer))
+	     )
+	(if (or (string-prefix-p "*" *buffer-name) (string-prefix-p " *" *buffer-name))
+	    :do-nothing
+	    (insert (format "[%s]\n" *buffer-name)))
+	)
+    :end-defun)
+
+(defun *get-line-number-width
+    ()
+    (+ 2 (length (format "%d" 
+		(count-lines (point-min) (point-max))
+		)
+	))
+    )
+
+(defun *render-side-bar ()
+    (with-current-buffer qxf-buffer-side-bar
+	(erase-buffer)
+	(insert (format "%s\n" (current-time-string)))
+	(dolist (*buffer (buffer-list))
+	    (*render-entry *buffer)))
+    :end-defun)
 
 (print "Loaded qxf-make.")
