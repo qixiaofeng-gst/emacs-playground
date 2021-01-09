@@ -49,14 +49,33 @@
 ; ?\(, ?\)
 
 ; ======= WIP =======
-(defun *get-index-of-pair (*string *start)
-    0)
-(defun qxf-test-get-index-of-pair
-    ()
-    (interactive)
-    (prin1 "Command placeholder.")
-    :defun-end)
-(define-key global-map (kbd "C-c t") 'qxf-test-get-index-of-pair)
+; {[Special Form] cond (condition [body-forms...])...}
+(defun *get-index-of-char (*string *start *c)
+    (*print-to-side-bar *string)
+    (let
+	(
+	    (*result nil)
+	    (*length (length *string))
+	    (*index *start)
+	    (*cc nil)
+	    )
+	(while (and (eq *result nil) (< *index *length))
+	    (setq *cc (elt *string *index))
+	    (cond
+		((eq *cc ?\\) (setq *index (+ 2 *index)))
+		((eq *cc *c) (setq *result *index))
+		(t (setq *index (1+ *index)))
+		)
+	    )
+	*result
+	)
+    )
+(*get-index-of-char "\\\"(\")\\\"" 0 ?\")
+; 1. Check next char:
+;    ": find next "
+;    \: index + 2
+;    (: find next )
+;    default: index + 1
 
 ; 1. Atomic line does not contain any open bracket(un-paired "(" or ")").
 ; 2. Atomic line does not contain any "\n".
@@ -122,6 +141,7 @@
 	(funcall *out (format "?\\(:%s" ?\())
 	(funcall *out (format "?\\):%s" ?\)))
 	(funcall *out (format "?\\\":%s" ?\"))
+	(funcall *out (format "?\\\\:%s" ?\\))
 	(*print-to-side-bar *to-print))
     :defun-end)
 (define-key global-map (kbd "C-c t") 'qxf-test-is-atomic-line)
