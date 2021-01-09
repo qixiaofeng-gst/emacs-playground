@@ -35,6 +35,18 @@
 ; DONE Implement append-to-side-bar.
 ; DONE Assign [C-c 0] to 3 panel mode, but not jump to mic-array-root.
 ; DONE Assign [C-c 9] to 2 panel mode.
+; DONE Know how to make data structure.
+;      * property list,
+;        * {[Function] plist-get plist property}
+;        * {[Function] plist-put plist property value}
+;        * {[Function] plist-member plist property}
+;      * associate list,
+;        * {[Function] assoc key alist &optional testfn}
+;        * {[Function] rassoc value alist}
+;        * {[Function] assq key alist}
+;      * record, is a vector, first solt is value to use by {type-of}.
+;        * {[Function] record type &rest objects}
+;        * {[Function] make-record type length object}
 
 ; {[function] buffer-list &optional frame}
 ; {[function] buffer-name &optional buffer}
@@ -70,6 +82,14 @@
 
 ; ======= WIP =======
 ; {[Special Form] cond (condition [body-forms...])...}
+(defun *get-index-of-string-end (*string *start)
+    (let*
+	(
+	    (*result nil)
+	    )
+	()
+	*result
+	))
 (defun *get-index-of-char (*string *start *c)
     (let*
 	(
@@ -85,7 +105,14 @@
 	    (setq *cc (elt *string *index))
 	    (cond
 		((and *not-dq (eq *cc ?\"))
-		    (setq *dq-index (*get-index-of-char *string (1+ *index) ?\"))
+		    (setq *dq-index (*get-index-of-string-end *string (1+ *index)))
+		    (if (eq *dq-index nil)
+			(setq *break t)
+			(setq *index (1+ *dq-index))
+			)
+		    )
+		((eq *cc ?\()
+		    (setq *dq-index (*get-index-of-char *string (1+ *index) ?\)))
 		    (if (eq *dq-index nil)
 			(setq *break t)
 			(setq *index (1+ *dq-index))
@@ -140,18 +167,25 @@
 	*result
 	)
     )
+
 (defun qxf-test-scan-text
     ()
     (interactive)
     (*print-to-side-bar "qxf-test-scan-text")
-    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")" 0)))
+    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")\"" 0)))
+    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")(\"" 0)))
+    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\"))" 0)))
+    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello" 0)))
+    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")\")" 0)))
+    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello()" 0)))
+    (*append-to-side-bar (format "\n%s" (eq 1 1)))
+    (*append-to-side-bar (format "\n%s" (eq "a" "a")))
     :defun-end)
 (define-key global-map (kbd "C-c t") 'qxf-test-scan-text)
 
 ; 1. Atomic line does not contain any open bracket(un-paired "(" or ")").
 ; 2. Atomic line does not contain any "\n".
 ; ======= WIP =======
-; TODO Know how to make data structure.
 (defun *is-atomic-line (*string-line)
     (let
 	(
@@ -208,6 +242,8 @@
 	(funcall *out "=======")
 	(funcall *out (qxf-*-stringify (numberp nil)))
 	(funcall *out (qxf-*-stringify (numberp t)))
+	(funcall *out (qxf-*-stringify (type-of (type-of "hello"))))
+	(funcall *out (qxf-*-stringify (eq 'string (type-of "hello"))))
 	(funcall *out (qxf-*-stringify (string-match "\n" "teststring")))
 	(funcall *out (format "?\\n:%s" ?\n))
 	(funcall *out (format "?\\(:%s" ?\())
