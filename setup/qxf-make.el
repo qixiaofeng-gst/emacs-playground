@@ -4,10 +4,16 @@
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
 (defvar qxf-buffer-side-bar (get-buffer-create "*side-bar*"))
 (defvar qxf-window-editor (frame-root-window))
+(defvar qxf-window-shell-out nil)
 (defvar qxf-window-side-bar nil)
 (defvar qxf-string-cache "")
 
+; TODO Implement [<backtab>].
+; TODO Extract print-to-buffer.
+; TODO Implement point history. [C-c .] and [C-c ,] to jump.
 ; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
+; TODO Assign [C-c i] to quick insertion.
+;      * Load template from file.
 ; TODO Sidebar for available buffers.
 ;      1. Show opened file buffers.
 ;      2. Add [C-c <down>] and [C-c <up>] for editor switch.
@@ -26,6 +32,9 @@
 ; DONE Add a C-c a to jump to the line beginning.
 ; DONE Add a cmake command.
 ; DONE Make line copy. [C-c d]
+; DONE Implement append-to-side-bar.
+; DONE Assign [C-c 0] to 3 panel mode, but not jump to mic-array-root.
+; DONE Assign [C-c 9] to 2 panel mode.
 
 ; {[function] buffer-list &optional frame}
 ; {[function] buffer-name &optional buffer}
@@ -51,7 +60,7 @@
 ; ======= WIP =======
 ; {[Special Form] cond (condition [body-forms...])...}
 (defun *get-index-of-char (*string *start *c)
-    (*print-to-side-bar *string)
+    (*append-to-side-bar (format "%s, %d, %c" *string *start *c))
     (let
 	(
 	    (*result nil)
@@ -70,12 +79,39 @@
 	*result
 	)
     )
-(*get-index-of-char "\\\"(\")\\\"" 0 ?\")
+; (*get-index-of-char "\\\"(\")\\\"" 0 ?\")
 ; 1. Check next char:
 ;    ": find next "
 ;    \: index + 2
 ;    (: find next )
 ;    default: index + 1
+(defun *scan-rest (*string *start)
+    (*print-to-side-bar (format "%s, %d" *string *start))
+    (let*
+	(
+	    (*result nil)
+	    (*index *start)
+	    (*pair-index nil)
+	    (*length (length *string))
+	    (*cc nil)
+	    )
+	(while (and (eq *result nil) (< *index *length))
+	    (setq *cc (elt *string *index))
+	    (cond
+		((eq *cc ?\")
+		    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\"))
+		    (if (eq *pair-index nil)
+			(setq *index (1+ *index))
+			(setq *index (1+ *pair-index))
+			)
+		    )
+		(t (setq *index (1+ *index)))
+		)
+	    )
+	*result
+	)
+    )
+(*scan-rest "\"hello" 0)
 
 ; 1. Atomic line does not contain any open bracket(un-paired "(" or ")").
 ; 2. Atomic line does not contain any "\n".
@@ -89,6 +125,7 @@
 	(if *index
 	    *index ; Here should return data structure.
 	    (progn
+		(setq *index 0)
 		t
 		)
 	    )
@@ -303,24 +340,33 @@
     :defun-end)
 (define-key global-map (kbd "C-c 2") 'qxf-cmake-mic-array)
 
-(defun qxf-open-mic-array
+(defun qxf-layout-3-pane
     ()
     (interactive)
     (qxf-focus-editor)
-    (delete-other-windows)		; Which is bound to "C-x 1".
-    (find-file (format "%s/src/listdevs.c" qxf-mic-array-root))
+    (delete-other-windows)
+    ; (find-file (format "%s/src/listdevs.c" qxf-mic-array-root))
     (shell-command "echo Make shell area.")
-    (let
-	((-new-window (split-window nil -20 'below)))
-	(set-window-buffer -new-window "*Shell Command Output*")
-	(setq qxf-window-side-bar (split-window nil (+ 120 (*get-line-number-width)) 'left))
-	(set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
-	(*render-side-bar)
-	(shell-command "echo Initialized shell area.")))
-(define-key global-map (kbd "C-c 0") 'qxf-open-mic-array)
+    (setq qxf-window-shell-out (split-window nil -20 'below))
+    (set-window-buffer qxf-window-shell-out "*Shell Command Output*")
+    (setq qxf-window-side-bar (split-window nil (+ 120 (*get-line-number-width)) 'left))
+    (set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
+    (*render-side-bar)
+    (shell-command "echo Initialized shell area."))
+(define-key global-map (kbd "C-c 0") 'qxf-layout-3-pane)
 
-(defun qxf-insert-command
-    (-command-name)
+(defun qxf-layout-2-pane
+    ()
+    (interactive)
+    (qxf-focus-editor)
+    (delete-other-windows)
+    (setq qxf-window-side-bar (split-window nil (+ 120 (*get-line-number-width)) 'left))
+    (set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
+    (*render-side-bar)
+    :defun-end)
+(define-key global-map (kbd "C-c 9") 'qxf-layout-2-pane)
+
+(defun qxf-insert-command (-command-name)
     (interactive "sCommand-name:")
     (insert (format "(defun %s
     ()
@@ -329,7 +375,7 @@
     :defun-end)
 (define-key global-map (kbd \"C-c t\") '%s)" -command-name -command-name))
     :defun-end)
-(define-key global-map (kbd "C-c 9") 'qxf-insert-command)
+(define-key global-map (kbd "C-c i") 'qxf-insert-command)
 
 (defun qxf-set-c-offset
     ()
@@ -362,6 +408,11 @@
 	(dolist (*buffer (buffer-list))
 	    (*render-entry *buffer)))
     :end-defun)
+
+(defun *append-to-side-bar (*message)
+    (with-current-buffer qxf-buffer-side-bar
+	(insert *message))
+    )
 
 (defun *print-to-side-bar (*message)
     (with-current-buffer qxf-buffer-side-bar
