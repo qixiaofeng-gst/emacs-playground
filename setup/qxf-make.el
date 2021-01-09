@@ -61,22 +61,42 @@
 ; 1. Atomic line does not contain any open bracket(un-paired "(" or ")").
 ; 2. Atomic line does not contain any "\n".
 ; ======= WIP =======
+; TODO Know how to make data structure.
 (defun *is-atomic-line (*string-line)
     (let
 	(
 	    (*index (string-match "\n" *string-line))
 	    )
 	(if *index
-	    *index
-	    t
+	    *index ; Here should return data structure.
+	    (progn
+		t
+		)
 	    )
 	)
     )
 
 ; {[Macro] defmacro name args [doc] [declare] body...}
-(defmacro qxf-stringify (*target)
-    `(print (quote ,*target)))
-(qxf-stringify (1 2 3))
+(defmacro qxf-*-print (*target)
+    `(let
+	 (
+	     (*out-string "")
+	     (*out
+		 (lambda (*c)
+		     (if (eq *c ?\n)
+			 (setq *out-string (format "%s\\n" *out-string))
+			 (setq *out-string (format "%s%c" *out-string *c))
+			 )
+		     )
+		 )
+	     )
+	 (princ (quote ,*target) *out)
+	 *out-string
+	 )
+    )
+(defmacro qxf-*-stringify (*target)
+    `(format "%s:%s" (qxf-*-print ,*target) ,*target)
+    )
 (defun qxf-test-is-atomic-line
     ()
     (interactive)
@@ -92,13 +112,16 @@
 		)
 	    (*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
 	    )
-	(funcall *test "\nHello \n test!")
+	(funcall *test "Hello \n test!")
 	(funcall *test "Hello test!")
 	(funcall *out "=======")
-	(princ '(1 2 3))
-	(funcall *out (format "(numberp nil):%s" (numberp nil)))
-	(funcall *out (format "(numberp t):%s" (numberp t)))
-	(funcall *out (format "(string-match):%s" (string-match "\n" "teststring")))
+	(funcall *out (qxf-*-stringify (numberp nil)))
+	(funcall *out (qxf-*-stringify (numberp t)))
+	(funcall *out (qxf-*-stringify (string-match "\n" "teststring")))
+	(funcall *out (format "?\\n:%s" ?\n))
+	(funcall *out (format "?\\(:%s" ?\())
+	(funcall *out (format "?\\):%s" ?\)))
+	(funcall *out (format "?\\\":%s" ?\"))
 	(*print-to-side-bar *to-print))
     :defun-end)
 (define-key global-map (kbd "C-c t") 'qxf-test-is-atomic-line)
