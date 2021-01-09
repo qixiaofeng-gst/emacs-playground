@@ -16,6 +16,8 @@
     kept-new-versions 20
     kept-old-versions 5)
 
+; TODO Move functions here.
+
 (defun qxf-open-init-el
     ()
     (interactive)

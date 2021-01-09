@@ -86,15 +86,25 @@
     (let*
 	(
 	    (*result nil)
+	    (*index *start)
+	    (*length (length *string))
+	    (*cc nil)
 	    )
-	()
+	(while (and (eq *result nil) (< *index *length))
+	    (setq *cc (elt *string *index))
+	    (cond
+		((eq *cc ?\") (setq *result *index))
+		((eq *cc ?\\) (setq *index (+ 2 *index)))
+		(t (setq *index (1+ *index)))
+		)
+	    )
+	(*append-to-side-bar (format "\nstr-idx [%s] %2d/%d, %s" *string *start *length *result))
 	*result
 	))
 (defun *get-index-of-char (*string *start *c)
     (let*
 	(
 	    (*result nil)
-	    (*not-dq (not (eq *c ?\")))
 	    (*length (length *string))
 	    (*index *start)
 	    (*dq-index nil)
@@ -104,18 +114,19 @@
 	(while (and (eq *result nil) (< *index *length) (eq *break nil))
 	    (setq *cc (elt *string *index))
 	    (cond
-		((and *not-dq (eq *cc ?\"))
+		((eq *c ?\")
+		    (setq *break t)
 		    (setq *dq-index (*get-index-of-string-end *string (1+ *index)))
 		    (if (eq *dq-index nil)
-			(setq *break t)
-			(setq *index (1+ *dq-index))
+			:pass
+			(setq *result *dq-index)
 			)
 		    )
 		((eq *cc ?\()
-		    (setq *dq-index (*get-index-of-char *string (1+ *index) ?\)))
-		    (if (eq *dq-index nil)
+		    (setq *tmp-index (*get-index-of-char *string (1+ *index) ?\)))
+		    (if (eq *tmp-index nil)
 			(setq *break t)
-			(setq *index (1+ *dq-index))
+			(setq *index (1+ *tmp-index))
 			)
 		    )
 		((eq *cc ?\\) (setq *index (+ 2 *index)))
@@ -123,7 +134,7 @@
 		(t (setq *index (1+ *index)))
 		)
 	    )
-	(*append-to-side-bar (format "\n%d, %s, %d, %c, %s" *length *string *start *c *result))
+	(*append-to-side-bar (format "\nchr-idx [%s] %2d/%d, %c, %s" *string *start *length *c *result))
 	*result
 	)
     )
@@ -134,7 +145,7 @@
 ;    (: find next )
 ;    default: index + 1
 (defun *scan-rest (*string *start)
-    (*append-to-side-bar (format "\n%s, %d" *string *start))
+    (*append-to-side-bar (format "\nscn-rst [%s] %d" *string *start))
     (let*
 	(
 	    (*result nil)
@@ -172,8 +183,8 @@
     ()
     (interactive)
     (*print-to-side-bar "qxf-test-scan-text")
-    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")\"" 0)))
-    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")(\"" 0)))
+    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")\"=====" 0)))
+    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")()(\"world)!" 0)))
     (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\"))" 0)))
     (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello" 0)))
     (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")\")" 0)))
