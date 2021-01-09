@@ -8,10 +8,10 @@
 (defvar qxf-window-side-bar nil)
 (defvar qxf-string-cache "")
 
+; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
 ; TODO Implement [<backtab>].
 ; TODO Extract print-to-buffer.
 ; TODO Implement point history. [C-c .] and [C-c ,] to jump.
-; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
 ; TODO Assign [C-c i] to quick insertion.
 ;      * Load template from file.
 ; TODO Sidebar for available buffers.
@@ -57,25 +57,46 @@
 ; {add-to-list}
 ; ?\(, ?\)
 
+(defun *append-to-side-bar (*message)
+    (with-current-buffer qxf-buffer-side-bar
+	(insert *message))
+    )
+
+(defun *print-to-side-bar (*message)
+    (with-current-buffer qxf-buffer-side-bar
+	(erase-buffer)
+	(insert (format "%s\n" (current-time-string)))
+	(insert *message)))
+
 ; ======= WIP =======
 ; {[Special Form] cond (condition [body-forms...])...}
 (defun *get-index-of-char (*string *start *c)
-    (*append-to-side-bar (format "%s, %d, %c" *string *start *c))
-    (let
+    (let*
 	(
 	    (*result nil)
+	    (*not-dq (not (eq *c ?\")))
 	    (*length (length *string))
 	    (*index *start)
+	    (*dq-index nil)
+	    (*break nil)
 	    (*cc nil)
 	    )
-	(while (and (eq *result nil) (< *index *length))
+	(while (and (eq *result nil) (< *index *length) (eq *break nil))
 	    (setq *cc (elt *string *index))
 	    (cond
+		((and *not-dq (eq *cc ?\"))
+		    (setq *dq-index (*get-index-of-char *string (1+ *index) ?\"))
+		    (if (eq *dq-index nil)
+			(setq *break t)
+			(setq *index (1+ *dq-index))
+			)
+		    )
 		((eq *cc ?\\) (setq *index (+ 2 *index)))
 		((eq *cc *c) (setq *result *index))
 		(t (setq *index (1+ *index)))
 		)
 	    )
+	(*append-to-side-bar (format "\n%d, %s, %d, %c, %s" *length *string *start *c *result))
 	*result
 	)
     )
@@ -86,7 +107,7 @@
 ;    (: find next )
 ;    default: index + 1
 (defun *scan-rest (*string *start)
-    (*print-to-side-bar (format "%s, %d" *string *start))
+    (*append-to-side-bar (format "\n%s, %d" *string *start))
     (let*
 	(
 	    (*result nil)
@@ -98,10 +119,18 @@
 	(while (and (eq *result nil) (< *index *length))
 	    (setq *cc (elt *string *index))
 	    (cond
+		((eq *cc ?\\) (setq *index (+ 2 *index)))
 		((eq *cc ?\")
 		    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\"))
 		    (if (eq *pair-index nil)
-			(setq *index (1+ *index))
+			(setq *result *index)
+			(setq *index (1+ *pair-index))
+			)
+		    )
+		((eq *cc ?\()
+		    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\)))
+		    (if (eq *pair-index nil)
+			(setq *result *index)
 			(setq *index (1+ *pair-index))
 			)
 		    )
@@ -111,7 +140,13 @@
 	*result
 	)
     )
-(*scan-rest "\"hello" 0)
+(defun qxf-test-scan-text
+    ()
+    (interactive)
+    (*print-to-side-bar "qxf-test-scan-text")
+    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")" 0)))
+    :defun-end)
+(define-key global-map (kbd "C-c t") 'qxf-test-scan-text)
 
 ; 1. Atomic line does not contain any open bracket(un-paired "(" or ")").
 ; 2. Atomic line does not contain any "\n".
@@ -408,16 +443,5 @@
 	(dolist (*buffer (buffer-list))
 	    (*render-entry *buffer)))
     :end-defun)
-
-(defun *append-to-side-bar (*message)
-    (with-current-buffer qxf-buffer-side-bar
-	(insert *message))
-    )
-
-(defun *print-to-side-bar (*message)
-    (with-current-buffer qxf-buffer-side-bar
-	(erase-buffer)
-	(insert (format "%s\n" (current-time-string)))
-	(insert *message)))
 
 (print "Loaded qxf-make.")
