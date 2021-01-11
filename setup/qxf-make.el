@@ -328,17 +328,15 @@
     (let
 	(
 	    (*point-o (point))
+	    (*string (buffer-string))
 	    (*point-a nil)
 	    (*point-b nil)
 	    )
-	(re-search-backward "\n\(")
-	(setq *point-a (1+ (point)))
-	(forward-sexp)
-	(setq *point-b (point))
+	(setq *point-a (1+ (*get-nearest-block-start *string *point-o)))
+	(setq *point-b (1+ (*get-index-of-char *string (1+ *point-a) ?\))))
 	(*print-to-side-bar
-	    (*format-form (buffer-substring-no-properties *point-a *point-b))
+	    (*format-form (substring *string *point-a *point-b))
 	    )
-	(goto-char *point-o)
 	)
     :defun-end)
 (define-key global-map (kbd "C-c q") 'qxf-format-lisp)
