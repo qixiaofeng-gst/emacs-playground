@@ -8,7 +8,7 @@
 (defvar qxf-window-shell-out nil)
 (defvar qxf-window-side-bar nil)
 (defvar qxf-string-cache "")
-(defvar qxf-lisp-code-indent 4)
+(defvar qxf-code-indent 4)
 
 (defun *append-to-side-bar (*message)
     (*append-to-buffer *message qxf-buffer-side-bar))
@@ -17,6 +17,7 @@
     (*print-to-buffer *message qxf-buffer-side-bar))
 
 ; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
+; TODO Implement [C-c s] and [C-c r], convenient search.
 ; TODO Implement [<backtab>].
 ; TODO Implement point history. [C-c .] and [C-c ,] to jump.
 ; TODO Assign [C-c i] to quick insertion.
@@ -297,18 +298,32 @@
     :defun-end)
 (define-key global-map (kbd "C-c t") 'qxf-test-is-atomic-line)
 
-(defun *get-index-of-linebreak-backward (*string *start)
+(defun *get-newline-index (*string *start *direction)
     (let*
 	(
 	    (*result nil)
 	    (*index *start)
 	    (*cc nil)
+	    (*length (length *string))
+	    (*update-index nil)
+	    (*continue nil)
 	    )
-	(while (and (> *index 0) (eq nil *result))
+	(fset '*update-index
+	    (cond
+		((eq :forward *direction) (lambda () (setq *index (1+ *index))))
+		((eq :backward *direction) (lambda () (setq *index (1- *index))))
+		(t (error "Direction has to be :forward or :backward."))
+		))
+	(fset '*continue
+	    (cond
+		((eq :forward *direction) (lambda () (< *index *length)))
+		((eq :backward *direction) (lambda () (> *index -1)))
+		))
+	(while (and (*continue) (eq nil *result))
 	    (setq *cc (elt *string *index))
 	    (if (eq ?\n *cc)
 		(setq *result *index)
-		(setq *index (1- *index))
+		(*update-index)
 		)
 	    )
 	*result
@@ -373,55 +388,50 @@
     )
 
 ; ======= WIP =======
-(defun *format-form (*string-form)
+(defun *format-form (*string-form &optional *indent)
+    (if (eq nil *indent)
+	(setq *indent 0)
+	:pass
+	)
     (let*
 	(
 	    (*length (length *string-form))
-	    (*left-bracket-index (1- *length))
+	    (*left-bracket-index (*get-index-of-char *string-form 0 ?\())
+	    (*right-bracket-index (*get-index-of-char *string-form (1+ *left-bracket-index) ?\)))
+	    (*first-newline-index nil)
 	    (*last-newline-index nil)
 	    (*distance nil)
 	    (*all-space-flag "nonset")
-	    (*offset 0)
-	    (*+1 (elt *string-form 0))
-	    (*-1 (elt *string-form (1- *length))))
-	(if (and (eq *+1 ?\() (eq *-1 ?\)))
-	    (if (*has-newline-between *string-form 0 (1- *length))
-		(progn
-		    (setq *last-newline-index (*get-index-of-linebreak-backward *string-form *left-bracket-index))
-		    (setq *distance (*get-distance-between *last-newline-index *left-bracket-index))
-		    (setq *all-space-flag (*is-all-space-between *string-form *last-newline-index *left-bracket-index))
-		    (if *all-space-flag
-			(setq *string-form
-			    (concat
-				(substring *string-form 0 (1+ *last-newline-index))
-				(substring *string-form *left-bracket-index *length)
-				)
-			    )
-			(setq *string-form
-			    (concat
-				(substring *string-form 0 *left-bracket-index)
-				"\n"
-				(substring *string-form *left-bracket-index *length)
-				))
-			)
-		    (concat
-			*string-form
-			"\n=======\n"
-			(format "%s/%s" (*get-index-of-char *string-form 1 ?\)) (length *string-form))
-			"\n=======\n"
-			(format "%s" *distance)
-			"\n=======\n"
-			(format "%s" *all-space-flag)
-			"\n=======\n"
-			)
+	    (*indent-string (make-string (* *indent qxf-code-indent) ?\s))
+	    )
+	(if (*has-newline-between *string-form *left-bracket-index *right-bracket-index)
+	    (progn
+		(setq *first-newline-index (*get-newline-index *string-form *left-bracket-index :forward))
+		(setq *last-newline-index (*get-newline-index *string-form *right-bracket-index :backward))
+		(setq *distance (*get-distance-between *last-newline-index *right-bracket-index))
+		(setq *all-space-flag
+		    (*is-all-space-between *string-form *last-newline-index *right-bracket-index)
 		    )
+		(if *all-space-flag
+		    (setq *string-form
+			(concat *indent-string (substring *string-form 0 (1+ *first-newline-index))
+			    
+			    *indent-string (substring *string-form *right-bracket-index *length)
+			    ))
+		    (setq *string-form
+			(concat *indent-string (substring *string-form 0 (1+ *first-newline-index))
+			    
+			    "\n" *indent-string (substring *string-form *right-bracket-index *length)
+			    ))
+		    )
+		)
+	    (concat
+		*indent-string
 		*string-form
 		)
-	    (format "Not a valid block. Start:[%c], end:[%c]. %s" *+1 *-1
-		"Expected start:[(], expected end:[)].")
 	    )
 	)
-    ) ; Here we should test with :end-defun
+    )
 
 (defun qxf-format-lisp
     ()
