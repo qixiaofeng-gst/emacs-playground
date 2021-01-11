@@ -101,7 +101,7 @@
 		    )
 		)
 	    )
-	(*print-to-side-bar (format "%s, %c" *tmp-index (elt *string *current-point)))
+	; (*print-to-side-bar (format "%s, %c" *tmp-index (elt *string *current-point)))
 	*result
 	)
     )
@@ -168,6 +168,8 @@
 			(setq *result *tmp-index)
 			)
 		    )
+		((eq *cc ?\\) (setq *index (+ 2 *index)))
+		((eq *cc *c) (setq *result *index))
 		((eq *cc ?\")
 		    (setq *tmp-index (*get-index-of-string-end *string (1+ *index)))
 		    (if (eq *tmp-index nil)
@@ -182,15 +184,13 @@
 			(setq *index (1+ *tmp-index))
 			)
 		    )
-		((eq *cc ?\\) (setq *index (+ 2 *index)))
-		((eq *cc *c) (setq *result *index))
 		(t (setq *index (1+ *index)))
 		)
 	    )
 	*result
 	)
     )
-; (*get-index-of-char "\\\"(\")\\\"" 0 ?\")
+
 ; 1. Check next char:
 ;    ": find next "
 ;    \: index + 2
@@ -335,6 +335,43 @@
 	*result
 	))
 
+(defun *count-lines (*string)
+    (let*
+	(
+	    (*start 0)
+	    (*length (length *string))
+	    (*count (if (> *length 0) 1 0))
+	    (*break nil)
+	    (*linebreak-index nil)
+	    )
+	(while (and (> *count 0) (< *start *length) (eq *break nil))
+	    (setq *linebreak-index (string-match "\n" *string *start))
+	    (if (eq nil *linebreak-index)
+		(setq *break t)
+		(progn
+		    (setq *count (1+ *count))
+		    (setq *start (1+ *linebreak-index))
+		    )
+		)
+	    )
+	*count
+	)
+    )
+
+(defun *has-newline-between (*string *start *end)
+    (let*
+	(
+	    (*result nil)
+	    (*string-to-search (substring *string (1+ *start) *end))
+	    )
+	(if (eq nil (string-match "\n" *string-to-search))
+	    :pass
+	    (setq *result t)
+	    )
+	*result
+	)
+    )
+
 ; ======= WIP =======
 (defun *format-form (*string-form)
     (let*
@@ -348,34 +385,37 @@
 	    (*+1 (elt *string-form 0))
 	    (*-1 (elt *string-form (1- *length))))
 	(if (and (eq *+1 ?\() (eq *-1 ?\)))
-	    (progn
-		(setq *last-newline-index (*get-index-of-linebreak-backward *string-form *left-bracket-index))
-		(setq *distance (*get-distance-between *last-newline-index *left-bracket-index))
-		(setq *all-space-flag (*is-all-space-between *string-form *last-newline-index *left-bracket-index))
-		(if *all-space-flag
-		    (setq *string-form
-			(concat
-			    (substring *string-form 0 (1+ *last-newline-index))
-			    (substring *string-form *left-bracket-index *length)
+	    (if (*has-newline-between *string-form 0 (1- *length))
+		(progn
+		    (setq *last-newline-index (*get-index-of-linebreak-backward *string-form *left-bracket-index))
+		    (setq *distance (*get-distance-between *last-newline-index *left-bracket-index))
+		    (setq *all-space-flag (*is-all-space-between *string-form *last-newline-index *left-bracket-index))
+		    (if *all-space-flag
+			(setq *string-form
+			    (concat
+				(substring *string-form 0 (1+ *last-newline-index))
+				(substring *string-form *left-bracket-index *length)
+				)
 			    )
+			(setq *string-form
+			    (concat
+				(substring *string-form 0 *left-bracket-index)
+				"\n"
+				(substring *string-form *left-bracket-index *length)
+				))
 			)
-		    (setq *string-form
-			(concat
-			    (substring *string-form 0 *left-bracket-index)
-			    "\n"
-			    (substring *string-form *left-bracket-index *length)
-			    ))
+		    (concat
+			*string-form
+			"\n=======\n"
+			(format "%s/%s" (*get-index-of-char *string-form 1 ?\)) (length *string-form))
+			"\n=======\n"
+			(format "%s" *distance)
+			"\n=======\n"
+			(format "%s" *all-space-flag)
+			"\n=======\n"
+			)
 		    )
-		(concat
-		    *string-form
-		    "\n=======\n"
-		    (format "%s/%s" (*get-index-of-char *string-form 1 ?\)) (length *string-form))
-		    "\n=======\n"
-		    (format "%s" *distance)
-		    "\n=======\n"
-		    (format "%s" *all-space-flag)
-		    "\n=======\n"
-		    )
+		*string-form
 		)
 	    (format "Not a valid block. Start:[%c], end:[%c]. %s" *+1 *-1
 		"Expected start:[(], expected end:[)].")
@@ -582,3 +622,4 @@
     :end-defun)
 
 (print "Loaded qxf-make.")
+
