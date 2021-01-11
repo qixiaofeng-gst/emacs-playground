@@ -9,9 +9,13 @@
 (defvar qxf-window-side-bar nil)
 (defvar qxf-string-cache "")
 
-; TODO Extract print-to-buffer.
+(defun *append-to-side-bar (*message)
+    (*append-to-buffer *message qxf-buffer-side-bar))
+
+(defun *print-to-side-bar (*message)
+    (*print-to-buffer *message qxf-buffer-side-bar))
+
 ; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
-; TODO Jump to nearest outmost bracket. [C-c a] and [C-c e].
 ; TODO Implement [<backtab>].
 ; TODO Implement point history. [C-c .] and [C-c ,] to jump.
 ; TODO Assign [C-c i] to quick insertion.
@@ -31,7 +35,7 @@
 ; DONE Implement line movement.
 ; DONE Implement snippet insertion. e.g. command definition.
 ; DONE Make the editor 120+<number-columns>. {[function] count-lines start end}
-; DONE Add a C-c a to jump to the line beginning.
+; DONE Add a [C-c a] to jump to the line beginning.
 ; DONE Add a cmake command.
 ; DONE Make line copy. [C-c d]
 ; DONE Implement append-to-side-bar.
@@ -49,6 +53,8 @@
 ;      * record, is a vector, first solt is value to use by {type-of}.
 ;        * {[Function] record type &rest objects}
 ;        * {[Function] make-record type length object}
+; DONE Extract print-to-buffer.
+; DONE Jump to nearest outmost bracket. [C-c b] and [C-c f].
 
 ; {[function] buffer-list &optional frame}
 ; {[function] buffer-name &optional buffer}
@@ -71,19 +77,54 @@
 ; {add-to-list}
 ; ?\(, ?\)
 
-(defun *append-to-side-bar (*message)
-    (with-current-buffer qxf-buffer-side-bar
-	(insert *message))
+; {[Special Form] cond (condition [body-forms...])...}
+; {[Function] buffer-size &optional buffer}
+
+(defun *get-nearest-block-start (*string *current-point)
+    (let*
+	(
+	    (*index 0)
+	    (*tmp-index nil)
+	    (*last-index 0)
+	    (*length (length *string))
+	    (*result nil)
+	    )
+	(while (and (< *index *length) (eq *result nil))
+	    (setq *tmp-index (string-match "\n(" *string *index))
+	    (cond
+		((eq nil *tmp-index) (setq *result *last-index))
+		((> *tmp-index *current-point) (setq *result *last-index))
+		(t
+		    (setq *index (1+ *tmp-index))
+		    (setq *last-index *tmp-index)
+		    )
+		)
+	    )
+	(*print-to-side-bar (format "%s, %c" *tmp-index (elt *string *current-point)))
+	*result
+	)
     )
 
-(defun *print-to-side-bar (*message)
-    (with-current-buffer qxf-buffer-side-bar
-	(erase-buffer)
-	(insert (format "%s\n" (current-time-string)))
-	(insert *message)))
+(defun qxf-jump-to-nearest-block-start
+    ()
+    (interactive)
+    (goto-char (+ 2 (*get-nearest-block-start (buffer-string) (- (point) 1))))
+    :defun-end)
+(define-key global-map (kbd "C-c b") 'qxf-jump-to-nearest-block-start)
 
-; ======= WIP =======
-; {[Special Form] cond (condition [body-forms...])...}
+(defun qxf-jump-to-nearest-block-end
+    ()
+    (interactive)
+    (let*
+	(
+	    (*string (buffer-string))
+	    (*start (*get-nearest-block-start *string (point)))
+	    )
+	(goto-char (+ 1 (*get-index-of-char *string (+ 3 *start) ?\))))
+	)
+    :defun-end)
+(define-key global-map (kbd "C-c f") 'qxf-jump-to-nearest-block-end)
+
 (defun *get-index-of-string-end (*string *start)
     (let*
 	(
@@ -92,6 +133,7 @@
 	    (*length (length *string))
 	    (*cc nil)
 	    )
+	; (*append-to-side-bar (format "str-idx [%s] %2d/%d" *string *start *length))
 	(while (and (eq *result nil) (< *index *length))
 	    (setq *cc (elt *string *index))
 	    (cond
@@ -100,28 +142,36 @@
 		(t (setq *index (1+ *index)))
 		)
 	    )
-	(*append-to-side-bar (format "\nstr-idx [%s] %2d/%d, %s" *string *start *length *result))
 	*result
 	))
+
 (defun *get-index-of-char (*string *start *c)
     (let*
 	(
 	    (*result nil)
 	    (*length (length *string))
 	    (*index *start)
-	    (*dq-index nil)
+	    (*tmp-index nil)
 	    (*break nil)
 	    (*cc nil)
 	    )
+	; (*append-to-side-bar (format "chr-idx [%s] %2d/%d, %c" *string *start *length *c))
 	(while (and (eq *result nil) (< *index *length) (eq *break nil))
 	    (setq *cc (elt *string *index))
 	    (cond
 		((eq *c ?\")
 		    (setq *break t)
-		    (setq *dq-index (*get-index-of-string-end *string (1+ *index)))
-		    (if (eq *dq-index nil)
+		    (setq *tmp-index (*get-index-of-string-end *string (1+ *index)))
+		    (if (eq *tmp-index nil)
 			:pass
-			(setq *result *dq-index)
+			(setq *result *tmp-index)
+			)
+		    )
+		((eq *cc ?\")
+		    (setq *tmp-index (*get-index-of-string-end *string (1+ *index)))
+		    (if (eq *tmp-index nil)
+			(setq *break t)
+			(setq *index (1+ *tmp-index))
 			)
 		    )
 		((eq *cc ?\()
@@ -136,7 +186,6 @@
 		(t (setq *index (1+ *index)))
 		)
 	    )
-	(*append-to-side-bar (format "\nchr-idx [%s] %2d/%d, %c, %s" *string *start *length *c *result))
 	*result
 	)
     )
@@ -146,16 +195,16 @@
 ;    \: index + 2
 ;    (: find next )
 ;    default: index + 1
-(defun *scan-rest (*string *start)
-    (*append-to-side-bar (format "\nscn-rst [%s] %d" *string *start))
+(defun *scan-rest (*string)
     (let*
 	(
 	    (*result nil)
-	    (*index *start)
+	    (*index 0)
 	    (*pair-index nil)
 	    (*length (length *string))
 	    (*cc nil)
 	    )
+	(*append-to-side-bar (format "scn-rst [%s] %2d/%d" *string 0 *length))
 	(while (and (eq *result nil) (< *index *length))
 	    (setq *cc (elt *string *index))
 	    (cond
@@ -185,14 +234,15 @@
     ()
     (interactive)
     (*print-to-side-bar "qxf-test-scan-text")
-    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")\"=====" 0)))
-    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")()(\"world)!" 0)))
-    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\"))" 0)))
-    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello" 0)))
-    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello\")\")" 0)))
-    (*append-to-side-bar (format "\n====>>> %s" (*scan-rest "(hello()" 0)))
-    (*append-to-side-bar (format "\n%s" (eq 1 1)))
-    (*append-to-side-bar (format "\n%s" (eq "a" "a")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello\")\"=====")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello\")()(\"world)!")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello\"))")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello\")\")")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello()")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello())")))
+    (*append-to-side-bar (format "%s" (eq 1 1)))
+    (*append-to-side-bar (format "%s" (eq "a" "a")))
     :defun-end)
 (define-key global-map (kbd "C-c t") 'qxf-test-scan-text)
 
@@ -214,27 +264,6 @@
 	)
     )
 
-; {[Macro] defmacro name args [doc] [declare] body...}
-(defmacro qxf-*-print (*target)
-    `(let
-	 (
-	     (*out-string "")
-	     (*out
-		 (lambda (*c)
-		     (if (eq *c ?\n)
-			 (setq *out-string (format "%s\\n" *out-string))
-			 (setq *out-string (format "%s%c" *out-string *c))
-			 )
-		     )
-		 )
-	     )
-	 (princ (quote ,*target) *out)
-	 *out-string
-	 )
-    )
-(defmacro qxf-*-stringify (*target)
-    `(format "%s:%s" (qxf-*-print ,*target) ,*target)
-    )
 (defun qxf-test-is-atomic-line
     ()
     (interactive)
@@ -284,6 +313,7 @@
 		(concat
 		    *string-form
 		    "\n=======\n"
+		    (format "%s/%s" (*get-index-of-char *string-form 1 ?\)) (length *string-form))
 		    )
 		)
 	    (format "Not a valid block. Start:[%c], end:[%c]. %s" *+1 *-1
