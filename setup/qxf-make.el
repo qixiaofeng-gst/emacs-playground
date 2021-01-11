@@ -102,7 +102,6 @@
 		    )
 		)
 	    )
-	; (*print-to-side-bar (format "%s, %c" *tmp-index (elt *string *current-point)))
 	*result
 	)
     )
@@ -294,11 +293,12 @@
 	(funcall *out (format "?\\):%s" ?\)))
 	(funcall *out (format "?\\\":%s" ?\"))
 	(funcall *out (format "?\\\\:%s" ?\\))
+	(funcall *out (format "%s" (point)))
 	(*print-to-side-bar *to-print))
     :defun-end)
 (define-key global-map (kbd "C-c t") 'qxf-test-is-atomic-line)
 
-(defun *get-newline-index (*string *start *direction)
+(defun *find-index (*string *cb-validate *start *direction)
     (let*
 	(
 	    (*result nil)
@@ -306,6 +306,7 @@
 	    (*cc nil)
 	    (*length (length *string))
 	    (*update-index nil)
+	    (*validate nil)
 	    (*continue nil)
 	    )
 	(fset '*update-index
@@ -319,15 +320,24 @@
 		((eq :forward *direction) (lambda () (< *index *length)))
 		((eq :backward *direction) (lambda () (> *index -1)))
 		))
+	(fset '*validate *cb-validate)
 	(while (and (*continue) (eq nil *result))
 	    (setq *cc (elt *string *index))
-	    (if (eq ?\n *cc)
+	    (if (*validate *cc)
 		(setq *result *index)
 		(*update-index)
 		)
 	    )
 	*result
 	)
+    )
+
+(defun *get-newline-index (*string *start *direction)
+    (*find-index *string (lambda (*cc) (eq ?\n *cc)) *start *direction)
+    )
+
+(defun *get-nonspace-index (*string *start *direction)
+    (*find-index *string (lambda (*cc) (not (eq ?\s *cc))) *start *direction)
     )
 
 (defun *get-distance-between (*start *end)
@@ -387,12 +397,24 @@
 	)
     )
 
+(defun *trim (*string)
+    (let*
+	(
+	    (*length (length *string))
+	    (*first-nonspace-index (*get-nonspace-index *string 0 :forward))
+	    (*last-nonspace-index (*get-nonspace-index *string (1- *length) :backward))
+	    )
+	(substring *string *first-nonspace-index (1+ *last-nonspace-index))
+	)
+    )
+
 ; ======= WIP =======
 (defun *format-form (*string-form &optional *indent)
     (if (eq nil *indent)
 	(setq *indent 0)
 	:pass
 	)
+    (setq *string-form (*trim *string-form))
     (let*
 	(
 	    (*length (length *string-form))
@@ -415,12 +437,14 @@
 		(if *all-space-flag
 		    (setq *string-form
 			(concat *indent-string (substring *string-form 0 (1+ *first-newline-index))
-			    
+			    (*format-form
+				(substring *string-form (1+ *first-newline-index) *right-bracket-index) (1+ *indent))
 			    *indent-string (substring *string-form *right-bracket-index *length)
 			    ))
 		    (setq *string-form
 			(concat *indent-string (substring *string-form 0 (1+ *first-newline-index))
-			    
+			    (*format-form
+				(substring *string-form (1+ *first-newline-index) *right-bracket-index) (1+ *indent))
 			    "\n" *indent-string (substring *string-form *right-bracket-index *length)
 			    ))
 		    )
@@ -438,13 +462,13 @@
     (interactive)
     (let*
 	(
-	    (*point-o (point))
 	    (*string (buffer-string))
-	    (*point-a (1+ (*get-nearest-block-start *string *point-o)))
+	    (*point-a (1+ (*get-nearest-block-start *string 4300)))
 	    (*point-b (1+ (*get-index-of-char *string (1+ *point-a) ?\))))
+	    (*block (substring *string *point-a *point-b))
 	    )
 	(*print-to-side-bar
-	    (*format-form (substring *string *point-a *point-b))
+	    (format "%s\n=======\n%s\n=======" *block (*format-form *block))
 	    )
 	)
     :defun-end)
