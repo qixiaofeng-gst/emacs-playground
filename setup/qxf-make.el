@@ -116,7 +116,9 @@
 (defun qxf-jump-to-nearest-block-end
     ()
     (interactive)
+    :insert-for-test
     (let*
+	; Something else for test.
 	(
 	    (*string (buffer-string))
 	    (*start (*get-nearest-block-start *string (point)))
@@ -387,11 +389,17 @@
     (let*
 	(
 	    (*result nil)
-	    (*string-to-search (substring *string (1+ *start) *end))
+	    (*string-to-search nil)
 	    )
-	(if (eq nil (string-match "\n" *string-to-search))
+	(if (or (eq nil *start) (eq nil *end))
 	    :pass
-	    (setq *result t)
+	    (progn
+		(setq *string-to-search (substring *string (1+ *start) *end))
+		(if (eq nil (string-match "\n" *string-to-search))
+		    :pass
+		    (setq *result t)
+		    )
+		)
 	    )
 	*result
 	)
@@ -419,12 +427,17 @@
 	(
 	    (*length (length *string-form))
 	    (*left-bracket-index (*get-index-of-char *string-form 0 ?\())
-	    (*right-bracket-index (*get-index-of-char *string-form (1+ *left-bracket-index) ?\)))
+	    (*right-bracket-index
+		(if (eq nil *left-bracket-index)
+		    nil
+		    (*get-index-of-char *string-form (1+ *left-bracket-index) ?\))
+		    ))
 	    (*first-newline-index nil)
 	    (*last-newline-index nil)
 	    (*distance nil)
 	    (*all-space-flag "nonset")
-	    (*indent-string (make-string (* *indent qxf-code-indent) ?\s))
+	    ; (*indent-string (make-string (* *indent qxf-code-indent) ?\s))
+	    (*indent-string (make-string (* *indent qxf-code-indent) ?+))
 	    )
 	(if (*has-newline-between *string-form *left-bracket-index *right-bracket-index)
 	    (progn
@@ -432,26 +445,38 @@
 		(setq *last-newline-index (*get-newline-index *string-form *right-bracket-index :backward))
 		(setq *distance (*get-distance-between *last-newline-index *right-bracket-index))
 		(setq *all-space-flag
-		    (*is-all-space-between *string-form *last-newline-index *right-bracket-index)
+		    (if (*is-all-space-between *string-form *last-newline-index *right-bracket-index)
+			"" "\n")
 		    )
-		(if *all-space-flag
-		    (setq *string-form
-			(concat *indent-string (substring *string-form 0 (1+ *first-newline-index))
-			    (*format-form
-				(substring *string-form (1+ *first-newline-index) *right-bracket-index) (1+ *indent))
-			    *indent-string (substring *string-form *right-bracket-index *length)
-			    ))
-		    (setq *string-form
-			(concat *indent-string (substring *string-form 0 (1+ *first-newline-index))
-			    (*format-form
-				(substring *string-form (1+ *first-newline-index) *right-bracket-index) (1+ *indent))
-			    "\n" *indent-string (substring *string-form *right-bracket-index *length)
-			    ))
+		(concat
+		    *indent-string (substring *string-form 0 *first-newline-index)
+		    "\n"
+		    (*format-form
+			(substring *string-form (1+ *first-newline-index) *right-bracket-index) (1+ *indent))
+		    *all-space-flag *indent-string
+		    (*format-form
+			(substring *string-form *right-bracket-index *length) *indent)
 		    )
 		)
-	    (concat
-		*indent-string
-		*string-form
+	    ; (concat *indent-string *string-form)
+	    (if (eq nil *left-bracket-index)
+		(concat (make-string (* *indent qxf-code-indent) ?-) *string-form)
+		(progn
+		    (*print-to-side-bar "=== here")
+		    (setq *indent-string (make-string (* *indent qxf-code-indent) ?-))
+		    (*print-to-side-bar (substring *string-form (1+ *left-bracket-index) *length))
+		    (setq *first-newline-index (*get-newline-index *string-form *right-bracket-index :forward))
+		    (*print-to-side-bar "=== here c")
+		    (if (eq nil *first-newline-index)
+			(concat *indent-string *string-form)
+			(concat
+			    *indent-string (substring *string-form 0 *first-newline-index)
+			    "\n"
+			    (*format-form
+				(substring *string-form (1+ *first-newline-index) *length) *indent)
+			    )
+			)
+		    )
 		)
 	    )
 	)
@@ -539,7 +564,7 @@
     ()
     (interactive)
     (let
-	((-temp-string (format "\"%s\"\n" (buffer-file-name (current-buffer)))))
+	((-temp-string (format "\"%s\"\n%d" (buffer-file-name (current-buffer)) (point))))
 	(with-temp-file qxf-focus-record (insert -temp-string))
 	)
     )
@@ -551,10 +576,13 @@
     (let*
 	(
 	    (-temp-buffer (find-file-noselect qxf-focus-record))
-	    (-path-string (read -temp-buffer)))
+	    (-path-string (read -temp-buffer))
+	    (*point (read -temp-buffer))
+	    )
 	(kill-buffer -temp-buffer)
 	(qxf-focus-editor)
 	(find-file -path-string)
+	(goto-char *point)
 	)
     )
 (define-key global-map (kbd "C-c =") 'qxf-load-record)
