@@ -7,6 +7,7 @@
 ; 2. The .el file name must same as the <feature-name-symbol>.
 ; 3. There have to be a (provide <feature-name-symbol>) line in the .el file.
 (add-to-list 'load-path (format "%s/setup" user-emacs-directory))
+(require 'qxf-utils)
 (require 'qxf-general)
 (require 'qxf-make)
 

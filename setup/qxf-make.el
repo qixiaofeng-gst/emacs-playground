@@ -1,4 +1,5 @@
 (provide 'qxf-make)
+(require 'qxf-utils)
 
 (defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
@@ -8,9 +9,10 @@
 (defvar qxf-window-side-bar nil)
 (defvar qxf-string-cache "")
 
-; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
-; TODO Implement [<backtab>].
 ; TODO Extract print-to-buffer.
+; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
+; TODO Jump to nearest outmost bracket. [C-c a] and [C-c e].
+; TODO Implement [<backtab>].
 ; TODO Implement point history. [C-c .] and [C-c ,] to jump.
 ; TODO Assign [C-c i] to quick insertion.
 ;      * Load template from file.
@@ -385,14 +387,15 @@
 (defun qxf-load-record
     ()
     (interactive)
-    (let
+    (let*
 	(
 	    (-temp-buffer (find-file-noselect qxf-focus-record))
-	    (-path-string "invalid path"))
-	(setq -path-string (read -temp-buffer))
+	    (-path-string (read -temp-buffer)))
+	(kill-buffer -temp-buffer)
 	(qxf-focus-editor)
 	(find-file -path-string)
-	(kill-buffer -temp-buffer)))
+	)
+    )
 (define-key global-map (kbd "C-c =") 'qxf-load-record)
 
 (defun qxf-focus-editor
