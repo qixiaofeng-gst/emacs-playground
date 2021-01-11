@@ -8,6 +8,7 @@
 (defvar qxf-window-shell-out nil)
 (defvar qxf-window-side-bar nil)
 (defvar qxf-string-cache "")
+(defvar qxf-lisp-code-indent 4)
 
 (defun *append-to-side-bar (*message)
     (*append-to-buffer *message qxf-buffer-side-bar))
@@ -296,24 +297,84 @@
     :defun-end)
 (define-key global-map (kbd "C-c t") 'qxf-test-is-atomic-line)
 
+(defun *get-index-of-linebreak-backward (*string *start)
+    (let*
+	(
+	    (*result nil)
+	    (*index *start)
+	    (*cc nil)
+	    )
+	(while (and (> *index 0) (eq nil *result))
+	    (setq *cc (elt *string *index))
+	    (if (eq ?\n *cc)
+		(setq *result *index)
+		(setq *index (1- *index))
+		)
+	    )
+	*result
+	)
+    )
+
+(defun *get-distance-between (*start *end)
+    (1- (- *end *start)))
+
+(defun *is-all-space-between (*string *start *end)
+    (let*
+	(
+	    (*index (1+ *start))
+	    (*result t)
+	    (*cc nil)
+	    )
+	(while (and (eq *result t) (< *index *end))
+	    (setq *cc (elt *string *index))
+	    (if (eq ?\s *cc)
+		(setq *index (1+ *index))
+		(setq *result nil)
+		)
+	    )
+	*result
+	))
+
 ; ======= WIP =======
 (defun *format-form (*string-form)
-    (let
+    (let*
 	(
-	    (*reversed (reverse *string-form))
 	    (*length (length *string-form))
+	    (*left-bracket-index (1- *length))
+	    (*last-newline-index nil)
+	    (*distance nil)
+	    (*all-space-flag "nonset")
 	    (*offset 0)
 	    (*+1 (elt *string-form 0))
-	    (*-1 (elt *string-form (- (length *string-form) 1))))
+	    (*-1 (elt *string-form (1- *length))))
 	(if (and (eq *+1 ?\() (eq *-1 ?\)))
 	    (progn
-		(setq *offset (string-match "\n" *reversed))
-		(setq *string-form
-		    (concat (substring *string-form 0 (- *length *offset)) ")"))
+		(setq *last-newline-index (*get-index-of-linebreak-backward *string-form *left-bracket-index))
+		(setq *distance (*get-distance-between *last-newline-index *left-bracket-index))
+		(setq *all-space-flag (*is-all-space-between *string-form *last-newline-index *left-bracket-index))
+		(if *all-space-flag
+		    (setq *string-form
+			(concat
+			    (substring *string-form 0 (1+ *last-newline-index))
+			    (substring *string-form *left-bracket-index *length)
+			    )
+			)
+		    (setq *string-form
+			(concat
+			    (substring *string-form 0 *left-bracket-index)
+			    "\n"
+			    (substring *string-form *left-bracket-index *length)
+			    ))
+		    )
 		(concat
 		    *string-form
 		    "\n=======\n"
 		    (format "%s/%s" (*get-index-of-char *string-form 1 ?\)) (length *string-form))
+		    "\n=======\n"
+		    (format "%s" *distance)
+		    "\n=======\n"
+		    (format "%s" *all-space-flag)
+		    "\n=======\n"
 		    )
 		)
 	    (format "Not a valid block. Start:[%c], end:[%c]. %s" *+1 *-1
@@ -325,15 +386,13 @@
 (defun qxf-format-lisp
     ()
     (interactive)
-    (let
+    (let*
 	(
 	    (*point-o (point))
 	    (*string (buffer-string))
-	    (*point-a nil)
-	    (*point-b nil)
+	    (*point-a (1+ (*get-nearest-block-start *string *point-o)))
+	    (*point-b (1+ (*get-index-of-char *string (1+ *point-a) ?\))))
 	    )
-	(setq *point-a (1+ (*get-nearest-block-start *string *point-o)))
-	(setq *point-b (1+ (*get-index-of-char *string (1+ *point-a) ?\))))
 	(*print-to-side-bar
 	    (*format-form (substring *string *point-a *point-b))
 	    )
