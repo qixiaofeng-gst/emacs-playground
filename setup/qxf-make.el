@@ -18,8 +18,8 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
-; TODO Implement [C-c s] and [C-c r], convenient search.
-; TODO Implement [<backtab>].
+; TODO Implement [<backtab>]. Trim inner spaces(       ).
+; TODO Implement [C-c j] to break with auto-format.
 ; TODO Implement file outline. List functions with sort and line numbers.
 ; TODO Assign [C-c i] to quick insertion.
 ;      * Load template from file.
@@ -31,6 +31,7 @@
 ; TODO Implement the project concept.
 ;      1. Make the qxf-mic-array-root (actually is work-root) changeable.
 ;      2. Way for search the project root, perhaps a hidden config file.
+; TODO Implement [C-c s] and [C-c r], convenient search, extract keyword at current point.
 ; TODO Local varialble rename.
 
 ; DONE Hide the menu bar in qxf-general.el.
@@ -59,6 +60,7 @@
 ; DONE Extract print-to-buffer.
 ; DONE Jump to nearest outmost bracket. [C-c b] and [C-c f].
 ; DONE Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
+; DONE Implement [C-c (] to auto insert ().
 ; FIXED [C-c q] Spaces at line-end.
 ; FIXED [C-c f] printed a lot things.
 ; FIXED [C-c q] Error on line with only empty string.
@@ -88,6 +90,28 @@
 
 ; {[Special Form] cond (condition [body-forms...])...}
 ; {[Function] buffer-size &optional buffer}
+
+(defun qxf-auto-insert-brackets
+    ()
+    (interactive)
+    (insert "()")
+    (backward-char)
+    :defun-end
+)
+(define-key global-map (kbd "C-c (") 'qxf-auto-insert-brackets)
+
+(defun qxf-backtab-trim-inner-spaces
+    ()
+    (interactive)
+    (let*
+        (
+            (*spaces-begin-index nil)
+        )
+	()
+    )
+    :defun-end
+)
+(define-key global-map (kbd "<backtab>") 'qxf-backtab-trim-inner-spaces)
 
 (defun *get-nearest-block-start (*string *current-point)
     (let*
@@ -421,7 +445,6 @@
         :pass
     )
     (setq *string-form (*trim *string-form))
-    
     (let*
         (
             (*indent-string (make-string (* *indent qxf-code-indent) ?\s))
@@ -513,12 +536,10 @@
             (*formatted (*format-form *block))
         )
         (if (string-equal *block *formatted)
-            
             :pass
             (delete-region (1+ *point-a) (1+ *point-b))
             (insert *formatted)
             (goto-char *point-o)
-            
         )
     )
     :defun-end
