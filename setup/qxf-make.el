@@ -19,6 +19,7 @@
 )
 
 ; TODO Implement [<backtab>]. Trim inner spaces(       ).
+; TODO Use hook and mode to deal with confliction with c mode.
 ; TODO Implement [C-c j] to break with auto-format.
 ; TODO Implement file outline. List functions with sort and line numbers.
 ; TODO Assign [C-c i] to quick insertion.
@@ -611,10 +612,11 @@
     ()
     (interactive)
     (let
-	((-temp-string (format "\"%s\"\n%d" (buffer-file-name (current-buffer)) (point))))
-	(with-temp-file qxf-focus-record (insert -temp-string))
-	)
+        ((-temp-string (format "\"%s\"\n%d" (buffer-file-name (current-buffer)) (point))))
+        (with-temp-file qxf-focus-record (insert -temp-string))
+	(princ "Recorded current focus.")
     )
+)
 (define-key global-map (kbd "C-c DEL") 'qxf-record-focus)
 
 (defun qxf-load-record
