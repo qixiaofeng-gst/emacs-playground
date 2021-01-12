@@ -57,6 +57,7 @@
 ;        * {[Function] make-record type length object}
 ; DONE Extract print-to-buffer.
 ; DONE Jump to nearest outmost bracket. [C-c b] and [C-c f].
+; FIXED [C-c f] printed a lot things.
 
 ; CANCELED Implement point history. [C-c .] and [C-c ,] to jump.
 
@@ -123,10 +124,8 @@
 	; Something else for test.
 	(
 	    (*string (buffer-string))
-	    (*start (*get-nearest-block-start *string (point)))
-	    )
-	(goto-char (+ 1 (*get-index-of-char *string (+ 3 *start) ?\))))
-	)
+	    (*start (*get-nearest-block-start *string (point))))
+	(goto-char (+ 1 (*get-index-of-char *string (+ 3 *start) ?\)))))
     :defun-end)
 (define-key global-map (kbd "C-c f") 'qxf-jump-to-nearest-block-end)
 
@@ -160,7 +159,7 @@
 	    (*break nil)
 	    (*cc nil)
 	    )
-	(*append-to-side-bar (format "chr-idx [%s] %2d/%d, %c" *string *start *length *c))
+	; (*append-to-side-bar (format "chr-idx [%s] %2d/%d, %c" *string *start *length *c))
 	(while (and (eq *result nil) (< *index *length) (eq *break nil))
 	    (setq *cc (elt *string *index))
 	    (cond
@@ -214,6 +213,7 @@
 	(while (and (eq *break nil) (< *index *length))
 	    (setq *cc (elt *string *index))
 	    (cond
+		((eq *cc ?\;) (setq *break t))
 		((eq *cc ?\\) (setq *index (+ 2 *index)))
 		((eq *cc ?\")
 		    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\"))
@@ -229,7 +229,6 @@
 			(setq *index (1+ *pair-index))
 			)
 		    )
-		((eq *cc ?\;) (setq *break t))
 		(t (setq *index (1+ *index)))
 		)
 	    )
@@ -420,7 +419,6 @@
 	)
     )
 
-; ======= WIP =======
 (defun *format-form (*string-form &optional *indent)
     (if (eq nil *indent)
 	(setq *indent 0)
@@ -461,8 +459,7 @@
 			(setq *nonspace-index (*get-nonspace-index *close-line 0 :forward))
 			(setq *rest-string (substring *string-form (1+ *close-bracket-index) *length))
 			(when (not (eq 0 (length *rest-string)))
-			    (setq *rest-string (*format-form *rest-string *indent))
-			    )
+			    (setq *rest-string (*format-form *rest-string *indent)))
 			(if (eq nil *nonspace-index)
 			    (concat
 				*indent-string *first-line "\n"
@@ -486,6 +483,7 @@
 	)
     )
 
+; ======= WIP =======
 (defun qxf-format-lisp
     ()
     (interactive)
