@@ -19,7 +19,7 @@
 ; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
 ; TODO Implement [C-c s] and [C-c r], convenient search.
 ; TODO Implement [<backtab>].
-; TODO Implement point history. [C-c .] and [C-c ,] to jump.
+; TODO Implement file outline. List functions with sort and line numbers.
 ; TODO Assign [C-c i] to quick insertion.
 ;      * Load template from file.
 ; TODO Sidebar for available buffers.
@@ -57,6 +57,8 @@
 ;        * {[Function] make-record type length object}
 ; DONE Extract print-to-buffer.
 ; DONE Jump to nearest outmost bracket. [C-c b] and [C-c f].
+
+; CANCELED Implement point history. [C-c .] and [C-c ,] to jump.
 
 ; {[function] buffer-list &optional frame}
 ; {[function] buffer-name &optional buffer}
@@ -158,7 +160,7 @@
 	    (*break nil)
 	    (*cc nil)
 	    )
-	; (*append-to-side-bar (format "chr-idx [%s] %2d/%d, %c" *string *start *length *c))
+	(*append-to-side-bar (format "chr-idx [%s] %2d/%d, %c" *string *start *length *c))
 	(while (and (eq *result nil) (< *index *length) (eq *break nil))
 	    (setq *cc (elt *string *index))
 	    (cond
@@ -198,34 +200,36 @@
 ;    \: index + 2
 ;    (: find next )
 ;    default: index + 1
-(defun *scan-rest (*string)
+(defun *scan-for-unpaired (*string)
     (let*
 	(
 	    (*result nil)
+	    (*break nil)
 	    (*index 0)
 	    (*pair-index nil)
 	    (*length (length *string))
 	    (*cc nil)
 	    )
 	(*append-to-side-bar (format "scn-rst [%s] %2d/%d" *string 0 *length))
-	(while (and (eq *result nil) (< *index *length))
+	(while (and (eq *break nil) (< *index *length))
 	    (setq *cc (elt *string *index))
 	    (cond
 		((eq *cc ?\\) (setq *index (+ 2 *index)))
 		((eq *cc ?\")
 		    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\"))
 		    (if (eq *pair-index nil)
-			(setq *result *index)
+			(progn (setq *break t) (setq *result *index))
 			(setq *index (1+ *pair-index))
 			)
 		    )
 		((eq *cc ?\()
 		    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\)))
 		    (if (eq *pair-index nil)
-			(setq *result *index)
+			(progn (setq *break t) (setq *result *index))
 			(setq *index (1+ *pair-index))
 			)
 		    )
+		((eq *cc ?\;) (setq *break t))
 		(t (setq *index (1+ *index)))
 		)
 	    )
@@ -237,13 +241,16 @@
     ()
     (interactive)
     (*print-to-side-bar "qxf-test-scan-text")
-    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello\")\"=====")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello\")()(\"world)!")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello\"))")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello\")\")")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello()")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-rest "(hello())")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello\")\"=====")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello\")()(\"world)!")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello\"))")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello\")\")")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello()")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello())")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello())\;")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello())\"")))
+    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello())(")))
     (*append-to-side-bar (format "%s" (eq 1 1)))
     (*append-to-side-bar (format "%s" (eq "a" "a")))
     :defun-end)
@@ -253,18 +260,7 @@
 ; 2. Atomic line does not contain any "\n".
 ; ======= WIP =======
 (defun *is-atomic-line (*string-line)
-    (let
-	(
-	    (*index (string-match "\n" *string-line))
-	    )
-	(if *index
-	    *index ; Here should return data structure.
-	    (progn
-		(setq *index 0)
-		t
-		)
-	    )
-	)
+    (if (eq nil (*scan-for-unpaired *string-line)) t nil)
     )
 
 (defun qxf-test-is-atomic-line
@@ -273,30 +269,33 @@
     (let
 	(
 	    (*to-print "Test results:\n")
-	    (*test
-		(lambda (*test-string)
-		    (setq *to-print
-			(concat *to-print
-			    (format "%s:%s\n" *test-string (*is-atomic-line *test-string))))
-		    )
-		)
-	    (*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
+	    (*test nil)
+	    (*out nil)
 	    )
-	(funcall *test "Hello \n test!")
-	(funcall *test "Hello test!")
-	(funcall *out "=======")
-	(funcall *out (qxf-*-stringify (numberp nil)))
-	(funcall *out (qxf-*-stringify (numberp t)))
-	(funcall *out (qxf-*-stringify (type-of (type-of "hello"))))
-	(funcall *out (qxf-*-stringify (eq 'string (type-of "hello"))))
-	(funcall *out (qxf-*-stringify (string-match "\n" "teststring")))
-	(funcall *out (format "?\\n:%s" ?\n))
-	(funcall *out (format "?\\(:%s" ?\())
-	(funcall *out (format "?\\):%s" ?\)))
-	(funcall *out (format "?\\\":%s" ?\"))
-	(funcall *out (format "?\\\\:%s" ?\\))
-	(funcall *out (format "%s" (point)))
-	(*print-to-side-bar *to-print))
+	(*print-to-side-bar "Atomic test start.")
+	(fset '*test (lambda (*test-string)
+			(setq *to-print
+			    (concat *to-print
+				(format "%s:%s\n" *test-string (*is-atomic-line *test-string))))
+			))
+	(fset '*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
+	(*test "Hello (test!")
+	(*test "Hello test!")
+	(*test "Hello () () \"(\" test!")
+	(*test "Hello () () \" test!")
+	(*out "=======")
+	(*out (qxf-*-stringify (numberp nil)))
+	(*out (qxf-*-stringify (numberp t)))
+	(*out (qxf-*-stringify (type-of (type-of "hello"))))
+	(*out (qxf-*-stringify (eq 'string (type-of "hello"))))
+	(*out (qxf-*-stringify (string-match "\n" "teststring")))
+	(*out (format "?\\n:%s" ?\n))
+	(*out (format "?\\(:%s" ?\())
+	(*out (format "?\\):%s" ?\)))
+	(*out (format "?\\\":%s" ?\"))
+	(*out (format "?\\\\:%s" ?\\))
+	(*out (format "%s" (point)))
+	(*append-to-side-bar *to-print))
     :defun-end)
 (define-key global-map (kbd "C-c t") 'qxf-test-is-atomic-line)
 
@@ -425,60 +424,9 @@
     (setq *string-form (*trim *string-form))
     (let*
 	(
-	    (*length (length *string-form))
-	    (*left-bracket-index (*get-index-of-char *string-form 0 ?\())
-	    (*right-bracket-index
-		(if (eq nil *left-bracket-index)
-		    nil
-		    (*get-index-of-char *string-form (1+ *left-bracket-index) ?\))
-		    ))
-	    (*first-newline-index nil)
-	    (*last-newline-index nil)
-	    (*distance nil)
-	    (*all-space-flag "nonset")
-	    ; (*indent-string (make-string (* *indent qxf-code-indent) ?\s))
-	    (*indent-string (make-string (* *indent qxf-code-indent) ?+))
+	    (*indent-string (make-string (* *indent qxf-code-indent) ?\s))
 	    )
-	(if (*has-newline-between *string-form *left-bracket-index *right-bracket-index)
-	    (progn
-		(setq *first-newline-index (*get-newline-index *string-form *left-bracket-index :forward))
-		(setq *last-newline-index (*get-newline-index *string-form *right-bracket-index :backward))
-		(setq *distance (*get-distance-between *last-newline-index *right-bracket-index))
-		(setq *all-space-flag
-		    (if (*is-all-space-between *string-form *last-newline-index *right-bracket-index)
-			"" "\n")
-		    )
-		(concat
-		    *indent-string (substring *string-form 0 *first-newline-index)
-		    "\n"
-		    (*format-form
-			(substring *string-form (1+ *first-newline-index) *right-bracket-index) (1+ *indent))
-		    *all-space-flag *indent-string
-		    (*format-form
-			(substring *string-form *right-bracket-index *length) *indent)
-		    )
-		)
-	    ; (concat *indent-string *string-form)
-	    (if (eq nil *left-bracket-index)
-		(concat (make-string (* *indent qxf-code-indent) ?-) *string-form)
-		(progn
-		    (*print-to-side-bar "=== here")
-		    (setq *indent-string (make-string (* *indent qxf-code-indent) ?-))
-		    (*print-to-side-bar (substring *string-form (1+ *left-bracket-index) *length))
-		    (setq *first-newline-index (*get-newline-index *string-form *right-bracket-index :forward))
-		    (*print-to-side-bar "=== here c")
-		    (if (eq nil *first-newline-index)
-			(concat *indent-string *string-form)
-			(concat
-			    *indent-string (substring *string-form 0 *first-newline-index)
-			    "\n"
-			    (*format-form
-				(substring *string-form (1+ *first-newline-index) *length) *indent)
-			    )
-			)
-		    )
-		)
-	    )
+	*string-form
 	)
     )
 
@@ -488,7 +436,7 @@
     (let*
 	(
 	    (*string (buffer-string))
-	    (*point-a (1+ (*get-nearest-block-start *string 4300)))
+	    (*point-a (1+ (*get-nearest-block-start *string 4400)))
 	    (*point-b (1+ (*get-index-of-char *string (1+ *point-a) ?\))))
 	    (*block (substring *string *point-a *point-b))
 	    )
