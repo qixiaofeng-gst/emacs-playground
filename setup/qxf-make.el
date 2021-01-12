@@ -338,7 +338,12 @@
     )
 
 (defun *get-nonspace-index (*string *start *direction)
-    (*find-index *string (lambda (*cc) (not (eq ?\s *cc))) *start *direction)
+    (*find-index
+	*string
+	(lambda (*cc) (not (or (eq ?\s *cc) (eq ?\t *cc))))
+	*start
+	*direction
+	)
     )
 
 (defun *get-distance-between (*start *end)
@@ -425,8 +430,59 @@
     (let*
 	(
 	    (*indent-string (make-string (* *indent qxf-code-indent) ?\s))
+	    (*first-newline-index (*get-newline-index *string-form 0 :forward))
+	    (*unpaired-index nil)
+	    (*unpaired-char nil)
+	    (*close-bracket-index nil)
+	    (*close-newline-index nil)
+	    (*close-line nil)
+	    (*nonspace-index nil)
+	    (*rest-string nil)
+	    (*length (length *string-form))
+	    (*first-line nil)
 	    )
-	*string-form
+	(if (eq nil *first-newline-index)
+	    (concat *indent-string *string-form)
+	    (setq *first-line (substring *string-form 0 *first-newline-index))
+	    (setq *unpaired-index (*scan-for-unpaired *first-line))
+	    (if (eq nil *unpaired-index)
+		(concat
+		    *indent-string *first-line "\n"
+		    (*format-form (substring *string-form (1+ *first-newline-index) *length) *indent)
+		    )
+		(setq *unpaired-char (elt *string-form *unpaired-index))
+		(if (not (eq *unpaired-char ?\())
+		    (concat *indent-string "\; ERROR Only unpaired \"(\" allowed.\n" *string-form)
+		    (setq *close-bracket-index (*get-index-of-char *string-form (1+ *unpaired-index) ?\)))
+		    (if (eq nil *close-bracket-index)
+			(concat *indent-string "\; ERROR Missing close bracket.\n" *string-form)
+			(setq *close-newline-index (*get-newline-index *string-form *close-bracket-index :backward))
+			(setq *close-line (substring *string-form (1+ *close-newline-index) *close-bracket-index))
+			(setq *nonspace-index (*get-nonspace-index *close-line 0 :forward))
+			(setq *rest-string (substring *string-form (1+ *close-bracket-index) *length))
+			(when (not (eq 0 (length *rest-string)))
+			    (setq *rest-string (*format-form *rest-string *indent))
+			    )
+			(if (eq nil *nonspace-index)
+			    (concat
+				*indent-string *first-line "\n"
+				(*format-form
+				    (substring *string-form (1+ *first-newline-index) *close-newline-index)
+				    (1+ *indent))
+				"\n" *indent-string ")" *rest-string
+				)
+			    (concat
+				*indent-string *first-line "\n"
+				(*format-form
+				    (substring *string-form (1+ *first-newline-index) *close-bracket-index)
+				    (1+ *indent))
+				"\n" *indent-string ")" *rest-string
+				)
+			    )
+			)
+		    )
+		)
+	    )
 	)
     )
 
