@@ -16,7 +16,8 @@
 (defun *print-to-side-bar (*message)
     (*print-to-buffer *message qxf-buffer-side-bar))
 
-; TODO Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
+; BUG [C-c q] Spaces at line-end.
+; BUG [C-c q] Empty line throw error.
 ; TODO Implement [C-c s] and [C-c r], convenient search.
 ; TODO Implement [<backtab>].
 ; TODO Implement file outline. List functions with sort and line numbers.
@@ -57,6 +58,7 @@
 ;        * {[Function] make-record type length object}
 ; DONE Extract print-to-buffer.
 ; DONE Jump to nearest outmost bracket. [C-c b] and [C-c f].
+; DONE Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
 ; FIXED [C-c f] printed a lot things.
 
 ; CANCELED Implement point history. [C-c .] and [C-c ,] to jump.
@@ -87,27 +89,27 @@
 
 (defun *get-nearest-block-start (*string *current-point)
     (let*
-	(
-	    (*index 0)
-	    (*tmp-index nil)
-	    (*last-index 0)
-	    (*length (length *string))
-	    (*result nil)
-	    )
-	(while (and (< *index *length) (eq *result nil))
-	    (setq *tmp-index (string-match "\n(" *string *index))
-	    (cond
-		((eq nil *tmp-index) (setq *result *last-index))
-		((> *tmp-index *current-point) (setq *result *last-index))
-		(t
-		    (setq *index (1+ *tmp-index))
-		    (setq *last-index *tmp-index)
-		    )
-		)
-	    )
-	*result
-	)
+        (
+            (*index 0)
+            (*tmp-index nil)
+            (*last-index 0)
+            (*length (length *string))
+            (*result nil)
+        )
+        (while (and (< *index *length) (eq *result nil))
+            (setq *tmp-index (string-match "\n(" *string *index))
+            (cond
+                ((eq nil *tmp-index) (setq *result *last-index))
+                ((> *tmp-index *current-point) (setq *result *last-index))
+                (t
+                    (setq *index (1+ *tmp-index))
+                    (setq *last-index *tmp-index)
+                )
+            )
+        )        
+        *result
     )
+)
 
 (defun qxf-jump-to-nearest-block-start
     ()
@@ -201,40 +203,40 @@
 ;    default: index + 1
 (defun *scan-for-unpaired (*string)
     (let*
-	(
-	    (*result nil)
-	    (*break nil)
-	    (*index 0)
-	    (*pair-index nil)
-	    (*length (length *string))
-	    (*cc nil)
-	    )
-	(*append-to-side-bar (format "scn-rst [%s] %2d/%d" *string 0 *length))
-	(while (and (eq *break nil) (< *index *length))
-	    (setq *cc (elt *string *index))
-	    (cond
-		((eq *cc ?\;) (setq *break t))
-		((eq *cc ?\\) (setq *index (+ 2 *index)))
-		((eq *cc ?\")
-		    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\"))
-		    (if (eq *pair-index nil)
-			(progn (setq *break t) (setq *result *index))
-			(setq *index (1+ *pair-index))
-			)
-		    )
-		((eq *cc ?\()
-		    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\)))
-		    (if (eq *pair-index nil)
-			(progn (setq *break t) (setq *result *index))
-			(setq *index (1+ *pair-index))
-			)
-		    )
-		(t (setq *index (1+ *index)))
-		)
-	    )
-	*result
-	)
+        (
+            (*result nil)
+            (*break nil)
+            (*index 0)
+            (*pair-index nil)
+            (*length (length *string))
+            (*cc nil)
+        )        
+        ; (*append-to-side-bar (format "scn-rst [%s] %2d/%d" *string 0 *length))
+        (while (and (eq *break nil) (< *index *length))
+            (setq *cc (elt *string *index))
+            (cond
+                ((eq *cc ?\;) (setq *break t))
+                ((eq *cc ?\\) (setq *index (+ 2 *index)))
+                ((eq *cc ?\")
+                    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\"))
+                    (if (eq *pair-index nil)
+                        (progn (setq *break t) (setq *result *index))
+                        (setq *index (1+ *pair-index))
+                    )
+                )                
+                ((eq *cc ?\()
+                    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\)))
+                    (if (eq *pair-index nil)
+                        (progn (setq *break t) (setq *result *index))
+                        (setq *index (1+ *pair-index))
+                    )
+                )                
+                (t (setq *index (1+ *index)))
+            )
+        )        
+        *result
     )
+)
 
 (defun qxf-test-scan-text
     ()
@@ -255,48 +257,34 @@
     :defun-end)
 (define-key global-map (kbd "C-c t") 'qxf-test-scan-text)
 
-; 1. Atomic line does not contain any open bracket(un-paired "(" or ")").
-; 2. Atomic line does not contain any "\n".
-; ======= WIP =======
-(defun *is-atomic-line (*string-line)
-    (if (eq nil (*scan-for-unpaired *string-line)) t nil)
-    )
-
-(defun qxf-test-is-atomic-line
+(defun qxf-temporary-test
     ()
     (interactive)
     (let
-	(
-	    (*to-print "Test results:\n")
-	    (*test nil)
-	    (*out nil)
-	    )
-	(*print-to-side-bar "Atomic test start.")
-	(fset '*test (lambda (*test-string)
-			(setq *to-print
-			    (concat *to-print
-				(format "%s:%s\n" *test-string (*is-atomic-line *test-string))))
-			))
-	(fset '*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
-	(*test "Hello (test!")
-	(*test "Hello test!")
-	(*test "Hello () () \"(\" test!")
-	(*test "Hello () () \" test!")
-	(*out "=======")
-	(*out (qxf-*-stringify (numberp nil)))
-	(*out (qxf-*-stringify (numberp t)))
-	(*out (qxf-*-stringify (type-of (type-of "hello"))))
-	(*out (qxf-*-stringify (eq 'string (type-of "hello"))))
-	(*out (qxf-*-stringify (string-match "\n" "teststring")))
-	(*out (format "?\\n:%s" ?\n))
-	(*out (format "?\\(:%s" ?\())
-	(*out (format "?\\):%s" ?\)))
-	(*out (format "?\\\":%s" ?\"))
-	(*out (format "?\\\\:%s" ?\\))
-	(*out (format "%s" (point)))
-	(*append-to-side-bar *to-print))
-    :defun-end)
-(define-key global-map (kbd "C-c t") 'qxf-test-is-atomic-line)
+        (
+            (*to-print "Test results:\n")
+            (*test nil)
+            (*out nil)
+        )        
+        (*print-to-side-bar "Atomic test start.")
+        (fset '*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
+        (*out "=======")
+        (*out (qxf-*-stringify (numberp nil)))
+        (*out (qxf-*-stringify (numberp t)))
+        (*out (qxf-*-stringify (type-of (type-of "hello"))))
+        (*out (qxf-*-stringify (eq 'string (type-of "hello"))))
+        (*out (qxf-*-stringify (string-match "\n" "teststring")))
+        (*out (format "?\\n:%s" ?\n))
+        (*out (format "?\\(:%s" ?\())
+        (*out (format "?\\):%s" ?\)))
+        (*out (format "?\\\":%s" ?\"))
+        (*out (format "?\\\\:%s" ?\\))
+        (*out (format "%s" (point)))
+        (*append-to-side-bar *to-print)
+    )    
+    :defun-end
+)
+(define-key global-map (kbd "C-c t") 'qxf-temporary-test)
 
 (defun *find-index (*string *cb-validate *start *direction)
     (let*
@@ -421,84 +409,101 @@
 
 (defun *format-form (*string-form &optional *indent)
     (if (eq nil *indent)
-	(setq *indent 0)
-	:pass
-	)
+        (setq *indent 0)
+        :pass
+    )    
     (setq *string-form (*trim *string-form))
     (let*
-	(
-	    (*indent-string (make-string (* *indent qxf-code-indent) ?\s))
-	    (*first-newline-index (*get-newline-index *string-form 0 :forward))
-	    (*unpaired-index nil)
-	    (*unpaired-char nil)
-	    (*close-bracket-index nil)
-	    (*close-newline-index nil)
-	    (*close-line nil)
-	    (*nonspace-index nil)
-	    (*rest-string nil)
-	    (*length (length *string-form))
-	    (*first-line nil)
-	    )
-	(if (eq nil *first-newline-index)
-	    (concat *indent-string *string-form)
-	    (setq *first-line (substring *string-form 0 *first-newline-index))
-	    (setq *unpaired-index (*scan-for-unpaired *first-line))
-	    (if (eq nil *unpaired-index)
-		(concat
-		    *indent-string *first-line "\n"
-		    (*format-form (substring *string-form (1+ *first-newline-index) *length) *indent)
-		    )
-		(setq *unpaired-char (elt *string-form *unpaired-index))
-		(if (not (eq *unpaired-char ?\())
-		    (concat *indent-string "\; ERROR Only unpaired \"(\" allowed.\n" *string-form)
-		    (setq *close-bracket-index (*get-index-of-char *string-form (1+ *unpaired-index) ?\)))
-		    (if (eq nil *close-bracket-index)
-			(concat *indent-string "\; ERROR Missing close bracket.\n" *string-form)
-			(setq *close-newline-index (*get-newline-index *string-form *close-bracket-index :backward))
-			(setq *close-line (substring *string-form (1+ *close-newline-index) *close-bracket-index))
-			(setq *nonspace-index (*get-nonspace-index *close-line 0 :forward))
-			(setq *rest-string (substring *string-form (1+ *close-bracket-index) *length))
-			(when (not (eq 0 (length *rest-string)))
-			    (setq *rest-string (*format-form *rest-string *indent)))
-			(if (eq nil *nonspace-index)
-			    (concat
-				*indent-string *first-line "\n"
-				(*format-form
-				    (substring *string-form (1+ *first-newline-index) *close-newline-index)
-				    (1+ *indent))
-				"\n" *indent-string ")" *rest-string
-				)
-			    (concat
-				*indent-string *first-line "\n"
-				(*format-form
-				    (substring *string-form (1+ *first-newline-index) *close-bracket-index)
-				    (1+ *indent))
-				"\n" *indent-string ")" *rest-string
-				)
-			    )
-			)
-		    )
-		)
-	    )
-	)
+        (
+            (*indent-string (make-string (* *indent qxf-code-indent) ?\s))
+            (*first-newline-index (*get-newline-index *string-form 0 :forward))
+            (*unpaired-index nil)
+            (*unpaired-char nil)
+            (*close-bracket-index nil)
+            (*close-newline-index nil)
+            (*close-line nil)
+            (*nonspace-index nil)
+            (*rest-string nil)
+            (*length (length *string-form))
+            (*first-line nil)
+        )        
+        (catch :return
+            (when (eq nil *first-newline-index)
+                (throw :return (concat *indent-string *string-form))
+            )            
+            (setq *first-line (substring *string-form 0 *first-newline-index))
+            (setq *unpaired-index (*scan-for-unpaired *first-line))
+            (when (eq nil *unpaired-index)
+                (throw :return
+                    (concat
+                        *indent-string *first-line "\n"
+                        (*format-form (substring *string-form (1+ *first-newline-index) *length) *indent)
+                    )
+                )
+            )            
+            (setq *unpaired-char (elt *string-form *unpaired-index))
+            (when (not (eq *unpaired-char ?\())
+                (throw :return
+                    (concat *indent-string "\; ERROR Only unpaired \"(\" allowed.\n" *string-form)
+                )
+            )            
+            (setq *close-bracket-index (*get-index-of-char *string-form (1+ *unpaired-index) ?\)))
+            (when (eq nil *close-bracket-index)
+                (throw :return
+                    (concat *indent-string "\; ERROR Missing close bracket.\n" *string-form)
+                )
+            )            
+            (setq *close-newline-index (*get-newline-index *string-form *close-bracket-index :backward))
+            (setq *close-line (substring *string-form (1+ *close-newline-index) *close-bracket-index))
+            (setq *nonspace-index (*get-nonspace-index *close-line 0 :forward))
+            (setq *rest-string (substring *string-form (1+ *close-bracket-index) *length))
+            (when (not (eq 0 (length *rest-string)))
+                (setq *rest-string (*format-form *rest-string *indent))
+            )            
+            (if (eq nil *nonspace-index)
+                (concat
+                    *indent-string *first-line "\n"
+                    (*format-form
+                        (substring *string-form (1+ *first-newline-index) *close-newline-index)
+                        (1+ *indent)
+                    )                    
+                    "\n" *indent-string ")" *rest-string
+                )                
+                (concat
+                    *indent-string *first-line "\n"
+                    (*format-form
+                        (substring *string-form (1+ *first-newline-index) *close-bracket-index)
+                        (1+ *indent)
+                    )                    
+                    "\n" *indent-string ")" *rest-string
+                )
+            )
+        )
     )
+)
 
 ; ======= WIP =======
 (defun qxf-format-lisp
     ()
     (interactive)
     (let*
-	(
-	    (*string (buffer-string))
-	    (*point-a (1+ (*get-nearest-block-start *string 4400)))
-	    (*point-b (1+ (*get-index-of-char *string (1+ *point-a) ?\))))
-	    (*block (substring *string *point-a *point-b))
-	    )
-	(*print-to-side-bar
-	    (format "%s\n=======\n%s\n=======" *block (*format-form *block))
-	    )
-	)
-    :defun-end)
+        (
+            (*string (buffer-substring-no-properties 1 (buffer-size)))
+            (*point-o (point))
+            (*point-a (1+ (*get-nearest-block-start *string *point-o)))
+            (*point-b (1+ (*get-index-of-char *string (1+ *point-a) ?\))))
+            (*block (substring *string *point-a *point-b))
+            (*formatted (*format-form *block))
+        )        
+        (if (string-equal *block *formatted)
+            :pass
+            (delete-region (1+ *point-a) (1+ *point-b))
+            (insert *formatted)
+            (goto-char *point-o)
+        )
+    )    
+    :defun-end
+)
 (define-key global-map (kbd "C-c q") 'qxf-format-lisp)
 
 (defun qxf-duplicate-line
