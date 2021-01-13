@@ -18,6 +18,7 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
+; TODO Take a look at package chapter. Extract private functions into qxf-utils.
 ; TODO Use hook and mode to deal with confliction with c mode.
 ; TODO Implement file outline. List functions with sort and line numbers.
 ; TODO Assign [C-c i] to quick insertion.
@@ -641,13 +642,15 @@
     ()
     (interactive)
     (setq qxf-string-cache (buffer-substring (region-beginning) (region-end)))
-    (keyboard-quit))
+    (keyboard-quit)
+)
 (define-key global-map (kbd "C-c c") 'qxf-copy-region)
 
 (defun qxf-paste
     ()
     (interactive)
-    (insert qxf-string-cache))
+    (insert qxf-string-cache)
+)
 (define-key global-map (kbd "C-c y") 'qxf-paste)
 
 (defun qxf-record-focus
@@ -665,44 +668,48 @@
     ()
     (interactive)
     (let*
-	(
-	    (-temp-buffer (find-file-noselect qxf-focus-record))
-	    (-path-string (read -temp-buffer))
-	    (*point (read -temp-buffer))
-	    )
-	(kill-buffer -temp-buffer)
-	(qxf-focus-editor)
-	(find-file -path-string)
-	(goto-char *point)
-	)
+        (
+            (-temp-buffer (find-file-noselect qxf-focus-record))
+            (-path-string (read -temp-buffer))
+            (*point (read -temp-buffer))
+        )
+        (kill-buffer -temp-buffer)
+        (qxf-focus-editor)
+        (find-file -path-string)
+        (goto-char *point)
     )
+)
 (define-key global-map (kbd "C-c =") 'qxf-load-record)
 
 (defun qxf-focus-editor
     ()
     (interactive)
     (*render-side-bar)
-    (select-window qxf-window-editor))
+    (select-window qxf-window-editor)
+)
 (define-key global-map (kbd "C-c -") 'qxf-focus-editor)
 
 (defun qxf-focus-side-bar
     ()
     (interactive)
     (*render-side-bar)
-    (select-window qxf-window-side-bar))
+    (select-window qxf-window-side-bar)
+)
 (define-key global-map (kbd "C-c \\") 'qxf-focus-side-bar)
 
 (defun qxf-make-mic-array
     ()
     (interactive)
-    (shell-command (format "date && cd %s/build && make -j 8 && ./listdevs" qxf-mic-array-root)))
+    (shell-command (format "date && cd %s/build && make -j 8 && ./listdevs" qxf-mic-array-root))
+)
 (define-key global-map (kbd "C-c 1") 'qxf-make-mic-array)
 
 (defun qxf-cmake-mic-array
     ()
     (interactive)
     (shell-command (format "date && cd %s/build && cmake .." qxf-mic-array-root))
-    :defun-end)
+    :defun-end
+)
 (define-key global-map (kbd "C-c 2") 'qxf-cmake-mic-array)
 
 (defun qxf-layout-3-pane
@@ -717,7 +724,8 @@
     (setq qxf-window-side-bar (split-window nil (+ 120 (*get-line-number-width)) 'left))
     (set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
     (*render-side-bar)
-    (shell-command "echo Initialized shell area."))
+    (shell-command "echo Initialized shell area.")
+)
 (define-key global-map (kbd "C-c 0") 'qxf-layout-3-pane)
 
 (defun qxf-layout-2-pane
@@ -728,7 +736,8 @@
     (setq qxf-window-side-bar (split-window nil (+ 120 (*get-line-number-width)) 'left))
     (set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
     (*render-side-bar)
-    :defun-end)
+    :defun-end
+)
 (define-key global-map (kbd "C-c 9") 'qxf-layout-2-pane)
 
 (defun qxf-insert-command (-command-name)
@@ -745,34 +754,38 @@
 (defun qxf-set-c-offset
     ()
     (interactive)
-    (set-variable 'c-basic-offset 4))
+    (set-variable 'c-basic-offset 4)
+)
 (define-key global-map (kbd "C-c 4") 'qxf-set-c-offset)
 
 (defun *render-entry (*buffer)
-    (let (
-	     (*buffer-name (buffer-name *buffer))
-	     )
-	(if (or (string-prefix-p "*" *buffer-name) (string-prefix-p " *" *buffer-name))
-	    :do-nothing
-	    (insert (format "[%s]\n" *buffer-name)))
-	)
-    :end-defun)
+    (let
+        (
+            (*buffer-name (buffer-name *buffer))
+        )
+        (if (or (string-prefix-p "*" *buffer-name) (string-prefix-p " *" *buffer-name))
+            :do-nothing
+            (insert (format "[%s]\n" *buffer-name))
+        )
+    )
+    :end-defun
+)
 
 (defun *get-line-number-width
     ()
-    (+ 2 (length (format "%d" 
-		(count-lines (point-min) (point-max))
-		)
-	))
-    )
+    (+ 2 (length (format "%d" (count-lines (point-min) (point-max)))))
+)
 
 (defun *render-side-bar ()
     (with-current-buffer qxf-buffer-side-bar
-	(erase-buffer)
-	(insert (format "%s\n" (current-time-string)))
-	(dolist (*buffer (buffer-list))
-	    (*render-entry *buffer)))
-    :end-defun)
+        (erase-buffer)
+        (insert (format "%s\n" (current-time-string)))
+        (dolist (*buffer (buffer-list))
+            (*render-entry *buffer)
+        )
+    )
+    :end-defun
+)
 
 (print "Loaded qxf-make.")
 
