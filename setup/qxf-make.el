@@ -18,9 +18,7 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
-; TODO Implement [<backtab>]. Trim inner spaces(       ).
 ; TODO Use hook and mode to deal with confliction with c mode.
-; TODO Implement [C-c j] to break with auto-format.
 ; TODO Implement file outline. List functions with sort and line numbers.
 ; TODO Assign [C-c i] to quick insertion.
 ;      * Load template from file.
@@ -62,6 +60,8 @@
 ; DONE Jump to nearest outmost bracket. [C-c b] and [C-c f].
 ; DONE Make the indent-sexp as I like: a brackets pair is not in same line have to be in same column. [C-c q]
 ; DONE Implement [C-c (] to auto insert ().
+; DONE Implement [<backtab>]. Trim inner spaces(    ).
+; DONE Implement [C-c j] to break with auto-format.
 ; FIXED [C-c q] Spaces at line-end.
 ; FIXED [C-c f] printed a lot things.
 ; FIXED [C-c q] Error on line with only empty string.
@@ -106,9 +106,30 @@
     (interactive)
     (let*
         (
-            (*spaces-begin-index nil)
+            (*line (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+            (*length (length *line))
+            (*start-index 0)
+            (*index (*get-nonspace-index *line 0 :forward))
+            (*result "")
         )
-	()
+        (catch :return
+            (while (< *index *length)
+                (setq *index (*get-space-index *line *index :forward))
+                (when (eq nil *index)
+                    (setq *result (concat *result "\s" (substring *line *start-index *length)))
+                    (throw :return nil)
+                )
+                (setq *result (concat *result "\s" (substring *line *start-index *index)))
+                (setq *index (*get-nonspace-index *line *index :forward))
+                (when (eq nil *index)
+                    (throw :return nil)
+                )
+                (setq *start-index *index)
+            )
+        )
+        (delete-region (line-beginning-position) (line-end-position))
+        (insert *result)
+        (qxf-format-lisp)
     )
     :defun-end
 )
@@ -348,8 +369,28 @@
     )
 )
 
+(defun qxf-create-newline
+    ()
+    (interactive)
+    (let*
+        ()
+        (insert "\n")
+        (qxf-format-lisp)
+        (end-of-line)
+    )
+    :defun-end
+)
+(define-key global-map (kbd "C-c j") 'qxf-create-newline)
+
 (defun *get-newline-index (*string *start *direction)
     (*find-index *string (lambda (*cc) (eq ?\n *cc)) *start *direction)
+)
+
+(defun *get-space-index (*string *start *direction)
+    (*find-index *string
+        (lambda (*cc) (or (eq ?\s *cc) (eq ?\t *cc)))
+        *start *direction
+    )
 )
 
 (defun *get-nonspace-index (*string *start *direction)
@@ -457,6 +498,7 @@
             (*close-line nil)
             (*nonspace-index nil)
             (*rest-string nil)
+            (*inner-string nil)
             (*length (length *string-form))
             (*first-line nil)
         )
@@ -502,23 +544,22 @@
                     (setq *rest-string (*format-form *rest-string *indent))
                 )
             )
-            (if (eq nil *nonspace-index)
-                (concat
-                    *indent-string *first-line "\n"
-                    (*format-form
-                        (substring *string-form (1+ *first-newline-index) *close-newline-index)
-                        (1+ *indent)
+            (setq *inner-string
+                (if (eq nil *nonspace-index)
+                    (substring *string-form
+                        (if (eq *first-newline-index *close-newline-index)
+                            *first-newline-index
+                            (1+ *first-newline-index)
+                        )
+                        *close-newline-index
                     )
-                    "\n" *indent-string ")" *rest-string
+                    (substring *string-form (1+ *first-newline-index) *close-bracket-index)
                 )
-                (concat
-                    *indent-string *first-line "\n"
-                    (*format-form
-                        (substring *string-form (1+ *first-newline-index) *close-bracket-index)
-                        (1+ *indent)
-                    )
-                    "\n" *indent-string ")" *rest-string
-                )
+            )
+            (concat
+                *indent-string *first-line "\n"
+                (*format-form *inner-string (1+ *indent))
+                "\n" *indent-string ")" *rest-string
             )
         )
     )
@@ -537,10 +578,11 @@
             (*formatted (*format-form *block))
         )
         (if (string-equal *block *formatted)
-            :pass
+            (princ "Current block is already pretty enough.")
             (delete-region (1+ *point-a) (1+ *point-b))
             (insert *formatted)
             (goto-char *point-o)
+            (princ "Formatted current block.")
         )
     )
     :defun-end
