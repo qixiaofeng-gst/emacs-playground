@@ -3,12 +3,21 @@
 
 (defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
+(defvar qxf-insertion-template nil)
 (defvar qxf-buffer-side-bar (get-buffer-create "*side-bar*"))
 (defvar qxf-window-editor (frame-root-window))
 (defvar qxf-window-shell-out nil)
 (defvar qxf-window-side-bar nil)
 (defvar qxf-string-cache "")
 (defvar qxf-code-indent 4)
+
+(with-temp-buffer
+    (insert-file-contents "~/.emacs.d/setup/insertion-templates.txt")
+    (setq qxf-insertion-template (read (current-buffer)))
+)
+
+(add-hook 'find-file-hook '*render-side-bar)
+(add-hook 'kill-buffer-hook '*render-side-bar)
 
 (defun *append-to-side-bar (*message)
     (*append-to-buffer *message qxf-buffer-side-bar)
@@ -18,11 +27,9 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
-; TODO Take a look at package chapter. Extract private functions into qxf-utils.
 ; TODO Use hook and mode to deal with confliction with c mode.
+; TODO Implement [C-c s] and [C-c r], convenient search, extract keyword at current point.
 ; TODO Implement file outline. List functions with sort and line numbers.
-; TODO Assign [C-c i] to quick insertion.
-;      * Load template from file.
 ; TODO Sidebar for available buffers.
 ;      1. Show opened file buffers.
 ;      2. Add [C-c <down>] and [C-c <up>] for editor switch.
@@ -31,8 +38,8 @@
 ; TODO Implement the project concept.
 ;      1. Make the qxf-mic-array-root (actually is work-root) changeable.
 ;      2. Way for search the project root, perhaps a hidden config file.
-; TODO Implement [C-c s] and [C-c r], convenient search, extract keyword at current point.
 ; TODO Local varialble rename.
+; TODO Auto jump to definition/header/declaration.
 
 ; DONE Hide the menu bar in qxf-general.el.
 ; DONE Create copy and paste logic.
@@ -63,6 +70,9 @@
 ; DONE Implement [C-c (] to auto insert ().
 ; DONE Implement [<backtab>]. Trim inner spaces(    ).
 ; DONE Implement [C-c j] to break with auto-format.
+; DONE Take a look at package chapter. Extract private functions into qxf-utils.
+; DONE Assign [C-c i] to quick insertion.
+;      * Load template from file.
 ; FIXED [C-c q] Spaces at line-end.
 ; FIXED [C-c f] printed a lot things.
 ; FIXED [C-c q] Error on line with only empty string.
@@ -311,11 +321,31 @@
     (let
         (
             (*to-print "Test results:\n")
-            (*test nil)
+            (*test (lambda (*in) (*append-to-side-bar (format "%s|" *in))))
             (*out nil)
-        )        
-        (*print-to-side-bar "Atomic test start.")
+            (*string nil)
+            (*readed nil)
+            (*readed-a nil)
+            (*readed-b nil)
+        )
+        (with-temp-buffer
+            (print "this is the damn good thing" (current-buffer))
+            (print "hello temp buffer" (current-buffer))
+            (print '(1 2 3) (current-buffer))
+            (setq *string (buffer-string))
+            (goto-char 1)
+            (setq *readed (read (current-buffer)))
+            (setq *readed-a (read (current-buffer)))
+            (setq *readed-b (read (current-buffer)))
+        )
         (fset '*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
+        (*print-to-side-bar "Atomic test start.")
+        (princ "test print" *test)
+        (prin1 *test qxf-buffer-side-bar)
+        (prin1 *string qxf-buffer-side-bar)
+        (prin1 *readed qxf-buffer-side-bar)
+        (prin1 *readed-a qxf-buffer-side-bar)
+        (prin1 *readed-b qxf-buffer-side-bar)
         (*out "=======")
         (*out (qxf-*-stringify (numberp nil)))
         (*out (qxf-*-stringify (numberp t)))
@@ -329,7 +359,7 @@
         (*out (format "?\\\\:%s" ?\\))
         (*out (format "%s" (point)))
         (*append-to-side-bar *to-print)
-    )    
+    )
     :defun-end
 )
 (define-key global-map (kbd "C-c t") 'qxf-temporary-test)
@@ -468,24 +498,9 @@
     )
 )
 
-(defun *trim (*string)
-    (let*
-        (
-            (*length (length *string))
-            (*first-nonspace-index (*get-nonspace-index *string 0 :forward))
-            (*last-nonspace-index (*get-nonspace-index *string (1- *length) :backward))
-        )
-        (if (eq nil *first-nonspace-index)
-            ""
-            (substring *string *first-nonspace-index (1+ *last-nonspace-index))
-        )
-    )
-)
-
 (defun *format-form (*string-form &optional *indent)
-    (if (eq nil *indent)
+    (when (eq nil *indent)
         (setq *indent 0)
-        :pass
     )
     (setq *string-form (*trim *string-form))
     (let*
@@ -742,13 +757,9 @@
 
 (defun qxf-insert-command (-command-name)
     (interactive "sCommand-name:")
-    (insert (format "(defun %s
-    ()
-    (interactive)
-    (prin1 \"Command placeholder.\")
-    :defun-end)
-(define-key global-map (kbd \"C-c t\") '%s)" -command-name -command-name))
-    :defun-end)
+    (insert (format qxf-insertion-template -command-name -command-name))
+    :defun-end
+)
 (define-key global-map (kbd "C-c i") 'qxf-insert-command)
 
 (defun qxf-set-c-offset
@@ -763,8 +774,7 @@
         (
             (*buffer-name (buffer-name *buffer))
         )
-        (if (or (string-prefix-p "*" *buffer-name) (string-prefix-p " *" *buffer-name))
-            :do-nothing
+        (unless (or (string-prefix-p "*" *buffer-name) (string-prefix-p " *" *buffer-name))
             (insert (format "[%s]\n" *buffer-name))
         )
     )

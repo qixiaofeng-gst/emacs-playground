@@ -12,6 +12,20 @@
 	(insert (format "%s\n" (current-time-string)))
 	(*append-to-buffer *message *buffer)))
 
+(defun *trim (*string)
+    (let*
+        (
+            (*length (length *string))
+            (*first-nonspace-index (*get-nonspace-index *string 0 :forward))
+            (*last-nonspace-index (*get-nonspace-index *string (1- *length) :backward))
+        )
+        (if (eq nil *first-nonspace-index)
+            ""
+            (substring *string *first-nonspace-index (1+ *last-nonspace-index))
+        )
+    )
+)
+
 (defmacro qxf-*-print (*target)
     `(let
 	 (
@@ -25,7 +39,7 @@
 		     )
 		 )
 	     )
-	 (princ (quote ,*target) *out)
+	 (prin1 (quote ,*target) *out)
 	 *out-string
 	 )
     )
