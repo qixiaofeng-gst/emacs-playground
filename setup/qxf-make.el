@@ -27,7 +27,6 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
-; TODO Use hook and mode to deal with confliction with c mode.
 ; TODO Implement [C-c s] and [C-c r], convenient search, extract keyword at current point.
 ; TODO Implement file outline. List functions with sort and line numbers.
 ; TODO Sidebar for available buffers.
@@ -78,6 +77,7 @@
 ; FIXED [C-c q] Error on line with only empty string.
 
 ; CANCELED Implement point history. [C-c .] and [C-c ,] to jump.
+; CANCELED Use hook and mode to deal with confliction with c mode.
 
 ; {[function] buffer-list &optional frame}
 ; {[function] buffer-name &optional buffer}
@@ -102,6 +102,19 @@
 
 ; {[Special Form] cond (condition [body-forms...])...}
 ; {[Function] buffer-size &optional buffer}
+
+(defun qxf-search-word
+    ()
+    (interactive)
+    (princ "TOOD Implement convenient searching.")
+    ; (isearch-mode t t nil t)
+    ; (setq isearch-new-string "form")
+    ; (setq isearch-string "form")
+    ; (setq isearch-new-forward t isearch-new-nonincremental nil)
+    ; (isearch-repeat 'forward)
+    :defun-end
+)
+(define-key global-map (kbd "C-c s") 'qxf-search-word)
 
 (defun qxf-auto-insert-brackets
     ()
@@ -174,7 +187,8 @@
     ()
     (interactive)
     (goto-char (+ 2 (*get-nearest-block-start (buffer-string) (- (point) 1))))
-    :defun-end)
+    :defun-end
+)
 (define-key global-map (kbd "C-c b") 'qxf-jump-to-nearest-block-start)
 
 (defun qxf-jump-to-nearest-block-end
@@ -407,6 +421,9 @@
         ()
         (insert "\n")
         (qxf-format-lisp)
+        (forward-line 2)
+        (re-search-backward "\n\s+\n")
+        (forward-char)
         (end-of-line)
     )
     :defun-end
