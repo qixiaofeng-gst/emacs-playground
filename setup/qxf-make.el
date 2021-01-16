@@ -27,16 +27,16 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
-; TODO Implement [C-c s] and [C-c r], convenient search, extract keyword at current point.
-; TODO Implement file outline. List functions with sort and line numbers.
 ; TODO Sidebar for available buffers.
+;      *. Side-bar content save and load.
 ;      1. Show opened file buffers.
 ;      2. Add [C-c <down>] and [C-c <up>] for editor switch.
 ;      3. Perhaps use blur hook of editor window to referesh the side-bar.
-;      4. Side-bar content save and load.
+; TODO Implement file outline. List functions with sort and line numbers.
 ; TODO Implement the project concept.
 ;      1. Make the qxf-mic-array-root (actually is work-root) changeable.
 ;      2. Way for search the project root, perhaps a hidden config file.
+; TODO Implement [C-c s] and [C-c r], convenient search, extract keyword at current point.
 ; TODO Local varialble rename.
 ; TODO Auto jump to definition/header/declaration.
 
@@ -71,7 +71,7 @@
 ; DONE Implement [C-c j] to break with auto-format.
 ; DONE Take a look at package chapter. Extract private functions into qxf-utils.
 ; DONE Assign [C-c i] to quick insertion.
-;      * Load template from file.
+;      * template Load from file.
 ; FIXED [C-c q] Spaces at line-end.
 ; FIXED [C-c f] printed a lot things.
 ; FIXED [C-c q] Error on line with only empty string.
@@ -119,8 +119,21 @@
 (defun qxf-auto-insert-brackets
     ()
     (interactive)
-    (insert "()")
-    (backward-char)
+    (let*
+        (
+            (*char (elt (buffer-substring-no-properties (point) (1+ (point))) 0))
+        )
+        (if (or (eq ?\s *char) (eq ?\) *char) (eq ?\( *char) (eq ?\n *char))
+            (progn (insert "()") (backward-char))
+            (re-search-forward "[\s\)]")
+            (backward-char)
+            (insert ")")
+            (re-search-backward "[\s\(]")
+            (insert "(")
+            (re-search-forward"\)")
+            (backward-char)
+        )
+    )
     :defun-end
 )
 (define-key global-map (kbd "C-c (") 'qxf-auto-insert-brackets)
@@ -174,11 +187,11 @@
                 ((eq nil *tmp-index) (setq *result *last-index))
                 ((> *tmp-index *current-point) (setq *result *last-index))
                 (t
-                    (setq *index (1+ *tmp-index))
+                    (setq *index (1+ (*get-index-of-char *string (+ 2 *tmp-index) ?\))))
                     (setq *last-index *tmp-index)
                 )
             )
-        )        
+        )
         *result
     )
 )
