@@ -287,12 +287,16 @@
     ()
     (interactive)
     (let*
-        ()
+        (
+            (*limit (*get-nearest-block-start (buffer-string) (point)))
+        )
         (insert "\n")
         (qxf-format-lisp)
         (forward-line 2)
-        (re-search-backward "\n\s+\n")
-        (forward-char)
+        (if (eq nil (re-search-backward "\n\s+\n" *limit t))
+            (forward-line -2)
+            (forward-char)
+        )
         (end-of-line)
     )
     :defun-end
@@ -574,7 +578,11 @@
 (define-key global-map (kbd "C-c 4") 'qxf-set-c-offset)
 
 (defun *clamp-string (*string *width)
-    ;(if (> (length *string) *width) (substring *string 0 ))
+    (if
+        (> (length *string) *width)
+        (substring *string 0 )
+        ; WIP
+    )
 )
 
 (defun *render-entry (*buffer)
