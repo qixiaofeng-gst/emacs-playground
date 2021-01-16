@@ -4,10 +4,13 @@
 (defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
 (defvar qxf-insertion-template nil)
-(defvar qxf-buffer-side-bar (get-buffer-create "*side-bar*"))
 (defvar qxf-window-editor (frame-root-window))
 (defvar qxf-window-shell-out nil)
+
+(defvar qxf-buffer-side-bar (get-buffer-create "*side-bar*"))
 (defvar qxf-window-side-bar nil)
+(defvar qxf-opened-buffers '())
+
 (defvar qxf-string-cache "")
 (defvar qxf-code-indent 4)
 
@@ -27,7 +30,6 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
-; TODO Extract private methods into qxf-utils.
 ; TODO Show more information for entries in sidebar.
 ; TODO Sidebar for available buffers.
 ;      *. Side-bar content save and load.
@@ -417,8 +419,12 @@
     ()
     (interactive)
     (beginning-of-line)
-    (goto-char (- (re-search-forward "[^[:space:]]") 1))
-    :defun-end)
+    (goto-char (1- (re-search-forward "[^[:space:]]")))
+    (if (string= "(" (buffer-substring-no-properties (point) (1+ (point))))
+        (forward-char)
+    )
+    :defun-end
+)
 (define-key global-map (kbd "C-c a") 'qxf-focus-line-beginning)
 
 (defun qxf-move-line-down
