@@ -30,8 +30,7 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
-; TODO Implement [C-c "], [C-c [] and [C-c {] inputing pair shortcut.
-; TODO Implement file outline. List functions with sort and line numbers.
+; TODO Implement file outline. List functions with sort and line numbers. [C-c |]
 ; TODO Sidebar for available buffers.
 ;      *. Side-bar content save and load.
 ;      1. Show opened file buffers.
@@ -77,6 +76,7 @@
 ; DONE Assign [C-c i] to quick insertion.
 ;      * template Load from file.
 ; DONE Show more information for entries in sidebar.
+; DONE Implement [C-c "], [C-c [] and [C-c {] inputing pair shortcut.
 ; FIXED [C-c q] Spaces at line-end.
 ; FIXED [C-c f] printed a lot things.
 ; FIXED [C-c q] Error on line with only empty string.
@@ -90,7 +90,7 @@
 ; {[function] buffer-modified-p &optional buffer}
 ; {[macro] with-current-buffer buffer-or-name body...}
 
-; WIP Align the outmost brackets pair.
+; Align the outmost brackets pair.
 ; TODO Validate the outmost begin line. 
 ;      1. Only one open "(" allowed.
 ;      2. If not valid, print message and jump to the second open "(".
@@ -123,7 +123,25 @@
 )
 (define-key global-map (kbd "C-c s") 'qxf-search-word)
 
-(defun qxf-auto-insert-brackets
+(defun qxf-jump-to-previous-empty-line
+    ()
+    (interactive)
+    (re-search-backward "\n\n")
+    (forward-char)
+    :defun-end
+)
+(define-key global-map (kbd "C-c -") 'qxf-jump-to-previous-empty-line)
+
+(defun qxf-jump-to-next-empty-line
+    ()
+    (interactive)
+    (re-search-forward "\n\n")
+    (backward-char)
+    :defun-end
+)
+(define-key global-map (kbd "C-c _") 'qxf-jump-to-next-empty-line)
+
+(defun qxf-auto-insert-parentheses
     ()
     (interactive)
     (let*
@@ -144,7 +162,63 @@
     )
     :defun-end
 )
-(define-key global-map (kbd "C-c (") 'qxf-auto-insert-brackets)
+(define-key global-map (kbd "C-c (") 'qxf-auto-insert-parentheses)
+
+(defun *auto-insert-paired (*pair)
+    (insert *pair)
+    (backward-char)
+)
+
+(defun qxf-auto-expand-empty-line
+    ()
+    (interactive)
+    (let*
+        (
+            (*char (elt (buffer-substring-no-properties (point) (1+ (point))) 0))
+        )
+        (if (eq ?\n *char)
+            (*auto-insert-paired "\n\n")
+            (princ "[C-c RET] could only be used on empty line.")
+        )
+    )
+    :defun-end
+)
+(define-key global-map (kbd "C-c RET") 'qxf-auto-expand-empty-line)
+
+(defun qxf-auto-insert-double-quotes
+    ()
+    (interactive)
+    (*auto-insert-paired "\"\"")
+    :defun-end
+)
+(define-key global-map (kbd "C-c \"") 'qxf-auto-insert-double-quotes)
+
+(defun qxf-auto-insert-brackets
+    ()
+    (interactive)
+    (*auto-insert-paired "[]")
+    :defun-end
+)
+(define-key global-map (kbd "C-c [") 'qxf-auto-insert-brackets)
+
+(defun qxf-auto-insert-braces
+    ()
+    (interactive)
+    (*auto-insert-paired "{}")
+    :defun-end
+)
+(define-key global-map (kbd "C-c {") 'qxf-auto-insert-braces)
+
+(defun qxf-kill-line
+    ()
+    (interactive)
+    (beginning-of-line)
+    (kill-line)
+    (kill-line)
+    (end-of-line)
+    :defun-end
+)
+(define-key global-map (kbd "C-c k") 'qxf-kill-line)
 
 (defun qxf-backtab-trim-inner-spaces
     ()
@@ -418,18 +492,20 @@
     ()
     (interactive)
     (let
-	(
-	    (*point-a nil)
-	    (*point-b nil)
-	    )
-	(beginning-of-line)
-	(setq *point-a (point))
-	(re-search-forward "\n")
-	(setq *point-b (point))
-	(insert (buffer-substring-no-properties *point-a *point-b))
-	(forward-line -1)
-	)
-    :defun-end)
+        (
+            (*point-a nil)
+            (*point-b nil)
+        )
+        (beginning-of-line)
+        (setq *point-a (point))
+        (re-search-forward "\n")
+        (setq *point-b (point))
+        (insert (buffer-substring-no-properties *point-a *point-b))
+        (forward-line -1)
+        (end-of-line)
+    )
+    :defun-end
+)
 (define-key global-map (kbd "C-c d") 'qxf-duplicate-line)
 
 (defun qxf-focus-line-beginning
@@ -515,7 +591,15 @@
     (*render-side-bar)
     (select-window qxf-window-editor)
 )
-(define-key global-map (kbd "C-c -") 'qxf-focus-editor)
+(define-key global-map (kbd "C-c e") 'qxf-focus-editor)
+
+(defun qxf-render-lisp-outline
+    ()
+    (interactive)
+    (princ "WIP Render lisp outline")
+    :defun-end
+)
+(define-key global-map (kbd "C-c |") 'qxf-render-lisp-outline)
 
 (defun qxf-focus-side-bar
     ()
