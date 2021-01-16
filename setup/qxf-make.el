@@ -152,15 +152,23 @@
             (*start-index 0)
             (*index (*get-nonspace-index *line 0 :forward))
             (*result "")
+            (*concat nil)
+            (*seperator nil)
+        )
+        (fset '*concat
+            (lambda (*string)
+                (setq *seperator (if (eq ?\) (elt *string 0)) "" "\s"))
+                (setq *result (concat *result *seperator *string))
+            )
         )
         (catch :return
             (while (< *index *length)
                 (setq *index (*get-space-index *line *index :forward))
                 (when (eq nil *index)
-                    (setq *result (concat *result "\s" (substring *line *start-index *length)))
+                    (*concat (substring *line *start-index *length))
                     (throw :return nil)
                 )
-                (setq *result (concat *result "\s" (substring *line *start-index *index)))
+                (*concat (substring *line *start-index *index))
                 (setq *index (*get-nonspace-index *line *index :forward))
                 (when (eq nil *index)
                     (throw :return nil)
@@ -170,6 +178,7 @@
         )
         (delete-region (line-beginning-position) (line-end-position))
         (insert *result)
+        (backward-char)
         (qxf-format-lisp)
     )
     :defun-end
@@ -558,20 +567,26 @@
 )
 (define-key global-map (kbd "C-c i") 'qxf-insert-command)
 
-(defun qxf-set-c-offset
-    ()
+(defun qxf-set-c-offset ()
     (interactive)
     (set-variable 'c-basic-offset 4)
 )
 (define-key global-map (kbd "C-c 4") 'qxf-set-c-offset)
 
+(defun *clamp-string (*string *width)
+    ;(if (> (length *string) *width) (substring *string 0 ))
+)
+
 (defun *render-entry (*buffer)
-    (let
+    (let*
         (
             (*buffer-name (buffer-name *buffer))
+            (*file-path (buffer-file-name *buffer))
+            (*should-render (stringp *file-path))
+            (*directory-path (if *should-render (file-name-directory *file-path) nil))
         )
-        (unless (or (string-prefix-p "*" *buffer-name) (string-prefix-p " *" *buffer-name))
-            (insert (format "[%s]\n" *buffer-name))
+        (when *should-render
+            (insert (format "[%-16s | %s]\n" *buffer-name *directory-path))
         )
     )
     :end-defun
