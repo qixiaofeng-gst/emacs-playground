@@ -30,13 +30,13 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
-; TODO Show more information for entries in sidebar.
+; TODO Implement [C-c "], [C-c [] and [C-c {] inputing pair shortcut.
+; TODO Implement file outline. List functions with sort and line numbers.
 ; TODO Sidebar for available buffers.
 ;      *. Side-bar content save and load.
 ;      1. Show opened file buffers.
 ;      2. Add [C-c <down>] and [C-c <up>] for editor switch.
 ;      3. Perhaps use blur hook of editor window to referesh the side-bar.
-; TODO Implement file outline. List functions with sort and line numbers.
 ; TODO Implement the project concept.
 ;      1. Make the qxf-mic-array-root (actually is work-root) changeable.
 ;      2. Way for search the project root, perhaps a hidden config file.
@@ -76,6 +76,7 @@
 ; DONE Take a look at package chapter. Extract private functions into qxf-utils.
 ; DONE Assign [C-c i] to quick insertion.
 ;      * template Load from file.
+; DONE Show more information for entries in sidebar.
 ; FIXED [C-c q] Spaces at line-end.
 ; FIXED [C-c f] printed a lot things.
 ; FIXED [C-c q] Error on line with only empty string.
@@ -109,6 +110,8 @@
 
 (defun qxf-search-word
     ()
+    "Currently only single line supported."
+    (declare (interactive-only t))
     (interactive)
     (princ "TOOD Implement convenient searching.")
     ; (isearch-mode t t nil t)
@@ -129,10 +132,11 @@
         )
         (if (or (eq ?\s *char) (eq ?\) *char) (eq ?\( *char) (eq ?\n *char))
             (progn (insert "()") (backward-char))
-            (re-search-forward "[\s\)]")
+            (re-search-forward "[\s\n\\)]")
             (backward-char)
             (insert ")")
-            (re-search-backward "[\s\(]")
+            (re-search-backward "[\s\\(]")
+            (forward-char)
             (insert "(")
             (re-search-forward"\)")
             (backward-char)
@@ -577,11 +581,18 @@
 )
 (define-key global-map (kbd "C-c 4") 'qxf-set-c-offset)
 
-(defun *clamp-string (*string *width)
-    (if
-        (> (length *string) *width)
-        (substring *string 0 )
-        ; WIP
+(defun *clamp-string (*string *width &optional *is-left)
+    (let*
+        (
+            (*length (length *string))
+        )
+        (if (> *length *width)
+            (if *is-left
+                (concat "..." (substring *string (- *length (- *width 3))))
+                (concat (substring *string 0 (- *width 3)) "...")
+            )
+            *string
+        )
     )
 )
 
@@ -594,7 +605,12 @@
             (*directory-path (if *should-render (file-name-directory *file-path) nil))
         )
         (when *should-render
-            (insert (format "[%-16s | %s]\n" *buffer-name *directory-path))
+            (insert
+                (format "[%-16s | %s]\n"
+                    (*clamp-string *buffer-name 16)
+                    (*clamp-string *directory-path 16 t)
+                )
+            )
         )
     )
     :end-defun
