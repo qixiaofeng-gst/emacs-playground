@@ -27,6 +27,8 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
+; TODO Extract private methods into qxf-utils.
+; TODO Show more information for entries in sidebar.
 ; TODO Sidebar for available buffers.
 ;      *. Side-bar content save and load.
 ;      1. Show opened file buffers.
@@ -172,30 +174,6 @@
 )
 (define-key global-map (kbd "<backtab>") 'qxf-backtab-trim-inner-spaces)
 
-(defun *get-nearest-block-start (*string *current-point)
-    (let*
-        (
-            (*index 0)
-            (*tmp-index nil)
-            (*last-index 0)
-            (*length (length *string))
-            (*result nil)
-        )
-        (while (and (< *index *length) (eq *result nil))
-            (setq *tmp-index (string-match "\n(" *string *index))
-            (cond
-                ((eq nil *tmp-index) (setq *result *last-index))
-                ((> *tmp-index *current-point) (setq *result *last-index))
-                (t
-                    (setq *index (1+ (*get-index-of-char *string (+ 2 *tmp-index) ?\))))
-                    (setq *last-index *tmp-index)
-                )
-            )
-        )
-        *result
-    )
-)
-
 (defun qxf-jump-to-nearest-block-start
     ()
     (interactive)
@@ -209,119 +187,22 @@
     (interactive)
     :insert-for-test
     (let*
-	; Something else for test.
-	(
-	    (*string (buffer-string))
-	    (*start (*get-nearest-block-start *string (point))))
-	(goto-char (+ 1 (*get-index-of-char *string (+ 3 *start) ?\)))))
-    :defun-end)
-(define-key global-map (kbd "C-c f") 'qxf-jump-to-nearest-block-end)
-
-(defun *get-index-of-string-end (*string *start)
-    (let*
-	(
-	    (*result nil)
-	    (*index *start)
-	    (*length (length *string))
-	    (*cc nil)
-	    )
-	; (*append-to-side-bar (format "str-idx [%s] %2d/%d" *string *start *length))
-	(while (and (eq *result nil) (< *index *length))
-	    (setq *cc (elt *string *index))
-	    (cond
-		((eq *cc ?\") (setq *result *index))
-		((eq *cc ?\\) (setq *index (+ 2 *index)))
-		(t (setq *index (1+ *index)))
-		)
-	    )
-	*result
-	))
-
-(defun *get-index-of-char (*string *start *c)
-    (let*
+        ; Something else for test.
         (
-            (*result nil)
-            (*length (length *string))
-            (*index *start)
-            (*tmp-index nil)
-            (*break nil)
-            (*cc nil)
+            (*string (buffer-string))
+            (*start (*get-nearest-block-start *string (point)))
         )
-        ; (*append-to-side-bar (format "chr-idx [%s] %2d/%d, %c" *string *start *length *c))
-        (while (and (eq *result nil) (< *index *length) (eq *break nil))
-            (setq *cc (elt *string *index))
-            (cond
-                ((eq *c ?\")
-                    (setq *break t)
-                    (setq *tmp-index (*get-index-of-string-end *string *index))
-                    (if (eq *tmp-index nil)
-                        :pass
-                        (setq *result *tmp-index)
-                    )
-                )
-                ((eq *cc ?\\) (setq *index (+ 2 *index)))
-                ((eq *cc *c) (setq *result *index))
-                ((eq *cc ?\")
-                    (setq *tmp-index (*get-index-of-string-end *string (1+ *index)))
-                    (if (eq *tmp-index nil)
-                        (setq *break t)
-                        (setq *index (1+ *tmp-index))
-                    )
-                )
-                ((eq *cc ?\()
-                    (setq *tmp-index (*get-index-of-char *string (1+ *index) ?\)))
-                    (if (eq *tmp-index nil)
-                        (setq *break t)
-                        (setq *index (1+ *tmp-index))
-                    )
-                )
-                (t (setq *index (1+ *index)))
-            )
-        )
-        *result
+        (goto-char (1+ (*get-index-of-char *string (+ 3 *start) ?\))))
     )
+    :defun-end
 )
+(define-key global-map (kbd "C-c f") 'qxf-jump-to-nearest-block-end)
 
 ; 1. Check next char:
 ;    ": find next "
 ;    \: index + 2
 ;    (: find next )
 ;    default: index + 1
-(defun *scan-for-unpaired (*string)
-    (let*
-        (
-            (*result nil)
-            (*break nil)
-            (*index 0)
-            (*pair-index nil)
-            (*length (length *string))
-            (*cc nil)
-        )
-        (while (and (eq *break nil) (< *index *length))
-            (setq *cc (elt *string *index))
-            (cond
-                ((eq *cc ?\;) (setq *break t))
-                ((eq *cc ?\\) (setq *index (+ 2 *index)))
-                ((eq *cc ?\")
-                    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\"))
-                    (if (eq *pair-index nil)
-                        (progn (setq *break t) (setq *result *index))
-                        (setq *index (1+ *pair-index))
-                    )
-                )
-                ((eq *cc ?\()
-                    (setq *pair-index (*get-index-of-char *string (1+ *index) ?\)))
-                    (if (eq *pair-index nil)
-                        (progn (setq *break t) (setq *result *index))
-                        (setq *index (1+ *pair-index))
-                    )
-                )
-                (t (setq *index (1+ *index)))
-            )
-        )
-        *result
-    )
-)
 
 (defun qxf-test-scan-text
     ()
@@ -391,42 +272,6 @@
 )
 (define-key global-map (kbd "C-c t") 'qxf-temporary-test)
 
-(defun *find-index (*string *cb-validate *start *direction)
-    (let*
-        (
-            (*result nil)
-            (*index *start)
-            (*cc nil)
-            (*length (length *string))
-            (*update-index nil)
-            (*validate nil)
-            (*continue nil)
-        )
-        (fset '*update-index
-            (cond
-                ((eq :forward *direction) (lambda () (setq *index (1+ *index))))
-                ((eq :backward *direction) (lambda () (setq *index (1- *index))))
-                (t (error "Direction has to be :forward or :backward."))
-            )
-        )
-        (fset '*continue
-            (cond
-                ((eq :forward *direction) (lambda () (< *index *length)))
-                ((eq :backward *direction) (lambda () (> *index -1)))
-            )
-        )
-        (fset '*validate *cb-validate)
-        (while (and (*continue) (eq nil *result))
-            (setq *cc (elt *string *index))
-            (if (*validate *cc)
-                (setq *result *index)
-                (*update-index)
-            )
-        )
-        *result
-    )
-)
-
 (defun qxf-create-newline
     ()
     (interactive)
@@ -442,91 +287,6 @@
     :defun-end
 )
 (define-key global-map (kbd "C-c j") 'qxf-create-newline)
-
-(defun *get-newline-index (*string *start *direction)
-    (*find-index *string (lambda (*cc) (eq ?\n *cc)) *start *direction)
-)
-
-(defun *get-space-index (*string *start *direction)
-    (*find-index *string
-        (lambda (*cc) (or (eq ?\s *cc) (eq ?\t *cc)))
-        *start *direction
-    )
-)
-
-(defun *get-nonspace-index (*string *start *direction)
-    (*find-index
-        *string
-        (lambda (*cc) (not (or (eq ?\s *cc) (eq ?\t *cc))))
-        *start
-        *direction
-    )
-)
-
-(defun *get-distance-between (*start *end)
-    (1- (- *end *start))
-)
-
-(defun *is-all-space-between (*string *start *end)
-    (let*
-        (
-            (*index (1+ *start))
-            (*result t)
-            (*cc nil)
-        )
-        (while (and (eq *result t) (< *index *end))
-            (setq *cc (elt *string *index))
-            (if (eq ?\s *cc)
-                (setq *index (1+ *index))
-                (setq *result nil)
-            )
-        )
-        *result
-    )
-)
-
-(defun *count-lines (*string)
-    (let*
-        (
-            (*start 0)
-            (*length (length *string))
-            (*count (if (> *length 0) 1 0))
-            (*break nil)
-            (*linebreak-index nil)
-        )
-        (while (and (> *count 0) (< *start *length) (eq *break nil))
-            (setq *linebreak-index (string-match "\n" *string *start))
-            (if (eq nil *linebreak-index)
-                (setq *break t)
-                (progn
-                    (setq *count (1+ *count))
-                    (setq *start (1+ *linebreak-index))
-                )
-            )
-        )
-        *count
-    )
-)
-
-(defun *has-newline-between (*string *start *end)
-    (let*
-        (
-            (*result nil)
-            (*string-to-search nil)
-        )
-        (if (or (eq nil *start) (eq nil *end))
-            :pass
-            (progn
-                (setq *string-to-search (substring *string (1+ *start) *end))
-                (if (eq nil (string-match "\n" *string-to-search))
-                    :pass
-                    (setq *result t)
-                )
-            )
-        )
-        *result
-    )
-)
 
 (defun *format-form (*string-form &optional *indent)
     (when (eq nil *indent)
