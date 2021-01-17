@@ -26,6 +26,35 @@
     )
 )
 
+(defmacro qxf-*-stringify (*target)
+    `(format "%s:%s" (qxf-*-print ,*target) ,*target)
+)
+
+(defmacro qxf-*-print (*target)
+    `(let
+        (
+            (*out-string "")
+            (*out
+                (lambda (*c)
+                    (if (eq *c ?\n)
+                        (setq *out-string (format "%s\\n" *out-string))
+                        (setq *out-string (format "%s%c" *out-string *c))
+                    )
+                )
+            )
+        )
+        (prin1 (quote ,*target) *out)
+        *out-string
+    )
+)
+
+(defun *get-file-contents (*file-path)
+    (with-temp-buffer
+        (insert-file-contents *file-path)
+        (buffer-substring-no-properties (point-min) (point-max))
+    )
+)
+
 (defun *append-to-buffer (*message *buffer)
     (with-current-buffer *buffer
         (insert (format "%s\n" *message))
@@ -52,28 +81,6 @@
             (substring *string *first-nonspace-index (1+ *last-nonspace-index))
         )
     )
-)
-
-(defmacro qxf-*-print (*target)
-    `(let
-        (
-            (*out-string "")
-            (*out
-                (lambda (*c)
-                    (if (eq *c ?\n)
-                        (setq *out-string (format "%s\\n" *out-string))
-                        (setq *out-string (format "%s%c" *out-string *c))
-                    )
-                )
-            )
-        )
-        (prin1 (quote ,*target) *out)
-        *out-string
-    )
-)
-
-(defmacro qxf-*-stringify (*target)
-    `(format "%s:%s" (qxf-*-print ,*target) ,*target)
 )
 
 (defun *get-nearest-block-start (*string *current-point)

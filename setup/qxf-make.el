@@ -4,7 +4,7 @@
 
 (defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
-(defvar qxf-insertion-template nil)
+(defvar qxf-insertion-template (*get-file-contents "~/.emacs.d/setup/insertion-templates.txt"))
 (defvar qxf-window-editor (frame-root-window))
 (defvar qxf-window-shell-out nil)
 
@@ -18,13 +18,9 @@
 (with-current-buffer qxf-buffer-side-bar
     (setq display-line-numbers t)
 )
-(with-temp-buffer
-    (insert-file-contents "~/.emacs.d/setup/insertion-templates.txt")
-    (setq qxf-insertion-template (read (current-buffer)))
-)
 
-(add-hook 'find-file-hook '*render-side-bar)
-(add-hook 'kill-buffer-hook '*render-side-bar)
+(add-hook 'buffer-list-update-hook '*render-side-bar)
+(add-hook 'kill-emacs-hook 'qxf-record-focus)
 
 (defun *append-to-side-bar (*message)
     (*append-to-buffer *message qxf-buffer-side-bar)
@@ -323,6 +319,7 @@
             (*readed-a nil)
             (*readed-b nil)
             (*test-map nil)
+            (*test-list '())
         )
         (*init-outline-entry *test-map "hello signature" 123)
         (with-temp-buffer
@@ -335,9 +332,11 @@
             (setq *readed-a (read (current-buffer)))
             (setq *readed-b (read (current-buffer)))
         )
+        (push *test-map *test-list)
         (fset '*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
         (*print-to-side-bar "Atomic test start.")
         ; Test for property list.
+        (prin1 (plist-get (elt *test-list 0) :line-number) qxf-buffer-side-bar)
         (print (*test-map :one) qxf-buffer-side-bar)
         (*test-map :one 111)
         (prin1 (plist-get *test-map :one) qxf-buffer-side-bar)
@@ -567,14 +566,20 @@
 )
 (define-key global-map (kbd "C-c y") 'qxf-paste)
 
+(defun *record-current-buffer (*buffer *point)
+    (let*
+        (
+            (*to-save (format "%s\n%d\n" (buffer-file-name *buffer) *point))
+        )
+        (with-temp-file qxf-focus-record (insert *to-save))
+    )
+)
+
 (defun qxf-record-focus
     ()
     (interactive)
-    (let
-        ((-temp-string (format "\"%s\"\n%d" (buffer-file-name (current-buffer)) (point))))
-        (with-temp-file qxf-focus-record (insert -temp-string))
-	(princ "Recorded current focus.")
-    )
+    (*record-current-buffer (current-buffer) (point))
+    (princ "Recorded current focus.")
 )
 (define-key global-map (kbd "C-c DEL") 'qxf-record-focus)
 
@@ -583,14 +588,28 @@
     (interactive)
     (let*
         (
-            (-temp-buffer (find-file-noselect qxf-focus-record))
-            (-path-string (read -temp-buffer))
-            (*point (read -temp-buffer))
+            (*string nil)
+            (*start-index 0)
+            (*end-index nil)
+            (*path-to-open nil)
+            (*point nil)
         )
-        (kill-buffer -temp-buffer)
+        (setq
+            *string
+            (with-temp-buffer
+                (insert-file-contents qxf-focus-record)
+                (buffer-substring-no-properties (point-min) (point-max))
+            )
+        )
+        (setq *end-index (*get-newline-index *string *start-index :forward))
+        (setq *path-to-open (substring *string *start-index *end-index))
+        (setq *start-index (1+ *end-index))
+        (setq *end-index (*get-newline-index *string *start-index :forward))
+        (setq *point (string-to-number (substring *string *start-index *end-index)))
         (qxf-focus-editor)
-        (find-file -path-string)
+        (find-file *path-to-open)
         (goto-char *point)
+        (princ "Loaded focus record.")
     )
 )
 (define-key global-map (kbd "C-c =") 'qxf-load-record)
