@@ -1,16 +1,44 @@
 (provide 'qxf-utils)
 
 ; {[Macro] defmacro name args [doc] [declare] body...}
+(defmacro ++ (*number &optional *increment)
+    (if (eq nil *increment)
+        `(setq ,*number (1+ ,*number))
+        `(setq ,*number (+ ,*increment ,*number))
+    )
+)
+
+(defmacro *make-object-oriented-like (*object)
+    `(fset (quote ,*object)
+        (lambda (*key &optional *value)
+            (if (eq nil *value)
+                (plist-get ,*object *key)
+                (plist-put ,*object *key *value)
+            )
+        )
+    )
+)
+
+(defmacro *init-outline-entry (*object *signature *line-number)
+    `(progn
+        (*make-object-oriented-like ,*object)
+        (setq ,*object (list :signature ,*signature :line-number ,*line-number))
+    )
+)
 
 (defun *append-to-buffer (*message *buffer)
     (with-current-buffer *buffer
-	(insert (format "%s\n" *message))))
+        (insert (format "%s\n" *message))
+    )
+)
 
 (defun *print-to-buffer (*message *buffer)
     (with-current-buffer *buffer
-	(erase-buffer)
-	(insert (format "%s\n" (current-time-string)))
-	(*append-to-buffer *message *buffer)))
+        (erase-buffer)
+        (insert (format "%s\n" (current-time-string)))
+        (*append-to-buffer *message *buffer)
+    )
+)
 
 (defun *trim (*string)
     (let*
@@ -28,21 +56,21 @@
 
 (defmacro qxf-*-print (*target)
     `(let
-	 (
-	     (*out-string "")
-	     (*out
-		 (lambda (*c)
-		     (if (eq *c ?\n)
-			 (setq *out-string (format "%s\\n" *out-string))
-			 (setq *out-string (format "%s%c" *out-string *c))
-			 )
-		     )
-		 )
-	     )
-	 (prin1 (quote ,*target) *out)
-	 *out-string
-	 )
+        (
+            (*out-string "")
+            (*out
+                (lambda (*c)
+                    (if (eq *c ?\n)
+                        (setq *out-string (format "%s\\n" *out-string))
+                        (setq *out-string (format "%s%c" *out-string *c))
+                    )
+                )
+            )
+        )
+        (prin1 (quote ,*target) *out)
+        *out-string
     )
+)
 
 (defmacro qxf-*-stringify (*target)
     `(format "%s:%s" (qxf-*-print ,*target) ,*target)

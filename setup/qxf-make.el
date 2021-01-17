@@ -1,5 +1,6 @@
 (provide 'qxf-make)
 (require 'qxf-utils)
+(require 'seq)
 
 (defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
@@ -14,6 +15,9 @@
 (defvar qxf-string-cache "")
 (defvar qxf-code-indent 4)
 
+(with-current-buffer qxf-buffer-side-bar
+    (setq display-line-numbers t)
+)
 (with-temp-buffer
     (insert-file-contents "~/.emacs.d/setup/insertion-templates.txt")
     (setq qxf-insertion-template (read (current-buffer)))
@@ -178,12 +182,12 @@
         )
         (if (eq ?\n *char)
             (*auto-insert-paired "\n\n")
-            (princ "[C-c RET] could only be used on empty line.")
+            (princ "[C-c C-j] could only be used on empty line.")
         )
     )
     :defun-end
 )
-(define-key global-map (kbd "C-c RET") 'qxf-auto-expand-empty-line)
+(define-key global-map (kbd "C-c C-j") 'qxf-auto-expand-empty-line)
 
 (defun qxf-auto-insert-double-quotes
     ()
@@ -287,12 +291,6 @@
 )
 (define-key global-map (kbd "C-c f") 'qxf-jump-to-nearest-block-end)
 
-; 1. Check next char:
-;    ": find next "
-;    \: index + 2
-;    (: find next )
-;    default: index + 1
-
 (defun qxf-test-scan-text
     ()
     (interactive)
@@ -324,7 +322,9 @@
             (*readed nil)
             (*readed-a nil)
             (*readed-b nil)
+            (*test-map nil)
         )
+        (*init-outline-entry *test-map "hello signature" 123)
         (with-temp-buffer
             (print "this is the damn good thing" (current-buffer))
             (print "hello temp buffer" (current-buffer))
@@ -337,12 +337,22 @@
         )
         (fset '*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
         (*print-to-side-bar "Atomic test start.")
-        (princ "test print" *test)
+        ; Test for property list.
+        (print (*test-map :one) qxf-buffer-side-bar)
+        (*test-map :one 111)
+        (prin1 (plist-get *test-map :one) qxf-buffer-side-bar)
+        (*test-map :three 333)
+        (print (*test-map :three) qxf-buffer-side-bar)
+        (prin1 (*test-map :line-number) qxf-buffer-side-bar)
+        (print (*test-map :signature) qxf-buffer-side-bar)
+        ; Test for with-temp-buffer
         (prin1 *test qxf-buffer-side-bar)
         (prin1 *string qxf-buffer-side-bar)
         (prin1 *readed qxf-buffer-side-bar)
         (prin1 *readed-a qxf-buffer-side-bar)
         (prin1 *readed-b qxf-buffer-side-bar)
+        ; Test for other things.
+        (princ "test print" *test)
         (*out "=======")
         (*out (qxf-*-stringify (numberp nil)))
         (*out (qxf-*-stringify (numberp t)))
@@ -593,10 +603,35 @@
 )
 (define-key global-map (kbd "C-c e") 'qxf-focus-editor)
 
+(defun *list-outmost-statements ()
+    (let*
+        (
+            (*list '())
+            (*start-index 0)
+            (*end-index 0)
+            (*string (buffer-substring-no-properties 1 (buffer-size)))
+            (*length (length *string))
+        )
+        (catch :break
+            (while t
+                ; (*get-index-of-char )
+                (push *start-index *list)
+                (++ *start-index 100)
+                (when (>= *start-index *length)
+                    (throw :break t)
+                )
+            )
+        )
+        ; (seq-sort-by (lambda (*e) (elt *e 0)) #'string< *list)
+        (setq *list (seq-sort '< *list))
+        (princ *list qxf-buffer-side-bar)
+    )
+)
+
 (defun qxf-render-lisp-outline
     ()
     (interactive)
-    (princ "WIP Render lisp outline")
+    (*list-outmost-statements)
     :defun-end
 )
 (define-key global-map (kbd "C-c |") 'qxf-render-lisp-outline)
