@@ -1,0 +1,8 @@
+(defun %s
+    (let*
+        (
+            (*x nil)
+        )
+        (princ "TODO Implement %s.")
+    )
+)

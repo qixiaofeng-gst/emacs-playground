@@ -4,7 +4,13 @@
 
 (defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
-(defvar qxf-insertion-template (*get-file-contents "~/.emacs.d/setup/insertion-templates.txt"))
+(defvar qxf-insertion-templates
+    (list
+        "cmd" (*get-file-contents "~/.emacs.d/setup/command.template")
+        "fun" (*get-file-contents "~/.emacs.d/setup/function.template")
+    )
+)
+
 (defvar qxf-window-editor (frame-root-window))
 (defvar qxf-window-shell-out nil)
 
@@ -19,8 +25,12 @@
     (setq display-line-numbers t)
 )
 
-(add-hook 'buffer-list-update-hook '*render-side-bar)
+(add-hook 'buffer-list-update-hook '*update-opened-buffers)
 (add-hook 'kill-emacs-hook 'qxf-record-focus)
+
+(defmacro *bind (*keys *command)
+    `(define-key global-map (kbd ,*keys) (quote ,*command))
+)
 
 (defun *append-to-side-bar (*message)
     (*append-to-buffer *message qxf-buffer-side-bar)
@@ -31,6 +41,9 @@
 )
 
 ; TODO Implement file outline. List functions with sort and line numbers. [C-c |]
+; TODO Implement function template.
+; TODO Investigate the batch mode.
+; TODO Design naming convention for function, command, variable and macro.
 ; TODO Sidebar for available buffers.
 ;      *. Side-bar content save and load.
 ;      1. Show opened file buffers.
@@ -122,7 +135,7 @@
     ; (isearch-repeat 'forward)
     :defun-end
 )
-(define-key global-map (kbd "C-c s") 'qxf-search-word)
+(*bind "C-c s" qxf-search-word)
 
 (defun qxf-jump-to-previous-empty-line
     ()
@@ -131,7 +144,7 @@
     (forward-char)
     :defun-end
 )
-(define-key global-map (kbd "C-c -") 'qxf-jump-to-previous-empty-line)
+(*bind "C-c -" qxf-jump-to-previous-empty-line)
 
 (defun qxf-jump-to-next-empty-line
     ()
@@ -140,7 +153,7 @@
     (backward-char)
     :defun-end
 )
-(define-key global-map (kbd "C-c _") 'qxf-jump-to-next-empty-line)
+(*bind "C-c _" qxf-jump-to-next-empty-line)
 
 (defun qxf-auto-insert-parentheses
     ()
@@ -163,7 +176,7 @@
     )
     :defun-end
 )
-(define-key global-map (kbd "C-c (") 'qxf-auto-insert-parentheses)
+(*bind "C-c (" qxf-auto-insert-parentheses)
 
 (defun *auto-insert-paired (*pair)
     (insert *pair)
@@ -184,7 +197,7 @@
     )
     :defun-end
 )
-(define-key global-map (kbd "C-c C-j") 'qxf-auto-expand-empty-line)
+(*bind "C-c C-j" qxf-auto-expand-empty-line)
 
 (defun qxf-auto-insert-double-quotes
     ()
@@ -192,7 +205,7 @@
     (*auto-insert-paired "\"\"")
     :defun-end
 )
-(define-key global-map (kbd "C-c \"") 'qxf-auto-insert-double-quotes)
+(*bind "C-c \"" qxf-auto-insert-double-quotes)
 
 (defun qxf-auto-insert-brackets
     ()
@@ -200,7 +213,7 @@
     (*auto-insert-paired "[]")
     :defun-end
 )
-(define-key global-map (kbd "C-c [") 'qxf-auto-insert-brackets)
+(*bind "C-c [" qxf-auto-insert-brackets)
 
 (defun qxf-auto-insert-braces
     ()
@@ -208,7 +221,7 @@
     (*auto-insert-paired "{}")
     :defun-end
 )
-(define-key global-map (kbd "C-c {") 'qxf-auto-insert-braces)
+(*bind "C-c {" qxf-auto-insert-braces)
 
 (defun qxf-kill-line
     ()
@@ -219,7 +232,7 @@
     (end-of-line)
     :defun-end
 )
-(define-key global-map (kbd "C-c k") 'qxf-kill-line)
+(*bind "C-c k" qxf-kill-line)
 
 (defun qxf-backtab-trim-inner-spaces
     ()
@@ -228,21 +241,30 @@
         (
             (*line (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
             (*length (length *line))
-            (*start-index 0)
-            (*index (*get-nonspace-index *line 0 :forward))
+            (*start-index (*get-nonspace-index *line 0 :forward))
+            (*index 0)
             (*result "")
             (*concat nil)
             (*seperator nil)
         )
         (fset '*concat
             (lambda (*string)
-                (setq *seperator (if (eq ?\) (elt *string 0)) "" "\s"))
+                (setq *seperator
+                    (if
+                        (or
+                            (eq ?\) (elt *string 0))
+                            (eq 0 (length *result))
+                        )
+                        ""
+                        "\s"
+                    )
+                )
                 (setq *result (concat *result *seperator *string))
             )
         )
         (catch :return
             (while (< *index *length)
-                (setq *index (*get-space-index *line *index :forward))
+                (setq *index (*get-space-index *line *start-index :forward))
                 (when (eq nil *index)
                     (*concat (substring *line *start-index *length))
                     (throw :return nil)
@@ -262,7 +284,7 @@
     )
     :defun-end
 )
-(define-key global-map (kbd "<backtab>") 'qxf-backtab-trim-inner-spaces)
+(*bind "<backtab>" qxf-backtab-trim-inner-spaces)
 
 (defun qxf-jump-to-nearest-block-start
     ()
@@ -270,7 +292,7 @@
     (goto-char (+ 2 (*get-nearest-block-start (buffer-string) (- (point) 1))))
     :defun-end
 )
-(define-key global-map (kbd "C-c b") 'qxf-jump-to-nearest-block-start)
+(*bind "C-c b" qxf-jump-to-nearest-block-start)
 
 (defun qxf-jump-to-nearest-block-end
     ()
@@ -286,7 +308,7 @@
     )
     :defun-end
 )
-(define-key global-map (kbd "C-c f") 'qxf-jump-to-nearest-block-end)
+(*bind "C-c f" qxf-jump-to-nearest-block-end)
 
 (defun qxf-test-scan-text
     ()
@@ -305,7 +327,7 @@
     (*append-to-side-bar (format "%s" (eq 1 1)))
     (*append-to-side-bar (format "%s" (eq "a" "a")))
     :defun-end)
-(define-key global-map (kbd "C-c t") 'qxf-test-scan-text)
+(*bind "C-c t" qxf-test-scan-text)
 
 (defun qxf-temporary-test
     ()
@@ -370,11 +392,14 @@
         (*out (format "?\\\":%s" ?\"))
         (*out (format "?\\\\:%s" ?\\))
         (*out (format "%s" (point)))
+        (*out (eq :test-const (read ":test-const")))
+        (*out (eq 'abc (make-symbol "abc")))
+        (*out (make-symbol "abc"))
         (*append-to-side-bar *to-print)
     )
     :defun-end
 )
-(define-key global-map (kbd "C-c t") 'qxf-temporary-test)
+(*bind "C-c t" qxf-temporary-test)
 
 (defun qxf-create-newline
     ()
@@ -394,7 +419,7 @@
     )
     :defun-end
 )
-(define-key global-map (kbd "C-c j") 'qxf-create-newline)
+(*bind "C-c j" qxf-create-newline)
 
 (defun *format-form (*string-form &optional *indent)
     (when (eq nil *indent)
@@ -501,7 +526,7 @@
     )
     :defun-end
 )
-(define-key global-map (kbd "C-c q") 'qxf-format-lisp)
+(*bind "C-c q" qxf-format-lisp)
 
 (defun qxf-duplicate-line
     ()
@@ -521,7 +546,7 @@
     )
     :defun-end
 )
-(define-key global-map (kbd "C-c d") 'qxf-duplicate-line)
+(*bind "C-c d" qxf-duplicate-line)
 
 (defun qxf-focus-line-beginning
     ()
@@ -533,7 +558,7 @@
     )
     :defun-end
 )
-(define-key global-map (kbd "C-c a") 'qxf-focus-line-beginning)
+(*bind "C-c a" qxf-focus-line-beginning)
 
 (defun qxf-move-line-down
     ()
@@ -544,7 +569,7 @@
 	(insert -temp-string)
 	(forward-line -1))
     :defun-end)
-(define-key global-map (kbd "C-c n") 'qxf-move-line-down)
+(*bind "C-c n" qxf-move-line-down)
 
 (defun qxf-move-line-up
     ()
@@ -555,7 +580,7 @@
 	(insert -temp-string)
 	(forward-line -1))
     :defun-end)
-(define-key global-map (kbd "C-c p") 'qxf-move-line-up)
+(*bind "C-c p" qxf-move-line-up)
 
 (defun qxf-copy-region
     ()
@@ -563,14 +588,14 @@
     (setq qxf-string-cache (buffer-substring (region-beginning) (region-end)))
     (keyboard-quit)
 )
-(define-key global-map (kbd "C-c c") 'qxf-copy-region)
+(*bind "C-c c" qxf-copy-region)
 
 (defun qxf-paste
     ()
     (interactive)
     (insert qxf-string-cache)
 )
-(define-key global-map (kbd "C-c y") 'qxf-paste)
+(*bind "C-c y" qxf-paste)
 
 (defun *record-current-buffer (*buffer *point)
     (let*
@@ -587,7 +612,7 @@
     (*record-current-buffer (current-buffer) (point))
     (princ "Recorded current focus.")
 )
-(define-key global-map (kbd "C-c DEL") 'qxf-record-focus)
+(*bind "C-c DEL" qxf-record-focus)
 
 (defun qxf-load-record
     ()
@@ -604,7 +629,7 @@
         (princ "Loaded focus record.")
     )
 )
-(define-key global-map (kbd "C-c =") 'qxf-load-record)
+(*bind "C-c =" qxf-load-record)
 
 (defun qxf-focus-editor
     ()
@@ -612,55 +637,86 @@
     (*render-side-bar)
     (select-window qxf-window-editor)
 )
-(define-key global-map (kbd "C-c e") 'qxf-focus-editor)
+(*bind "C-c e" qxf-focus-editor)
 
-(defun *list-outmost-statements ()
+(defun *list-outmost-blocks ()
     (let*
         (
             (*list '())
+            (*entry nil)
             (*start-index 0)
             (*end-index 0)
-            (*string (buffer-substring-no-properties 1 (buffer-size)))
+            (*string (buffer-substring-no-properties (point-min) (point-max)))
             (*length (length *string))
         )
         (catch :break
-            (while t
-                ; (*get-index-of-char )
-                (push *start-index *list)
-                (++ *start-index 100)
-                (when (>= *start-index *length)
+            (while (< *start-index *length)
+                (setq *start-index (*get-index-of-char *string *start-index ?\())
+                (when (null *start-index) (throw :break t))
+                (setq *end-index (*get-index-of-char *string (1+ *start-index) ?\)))
+                (when (null *end-index)
+                    (princ "Lisp code is broken.")
                     (throw :break t)
                 )
+                (push 
+                    (*init-outline-entry *entry
+                        (substring *string *start-index (1+ *end-index))
+                        (*count-lines (substring *string 0 *start-index))
+                    )
+                    *list
+                )
+                (setq *start-index (1+ *end-index))
             )
         )
+        (setq *list (reverse *list))
         ; (seq-sort-by (lambda (*e) (elt *e 0)) #'string< *list)
-        (setq *list (seq-sort '< *list))
-        (princ *list qxf-buffer-side-bar)
+        ; (setq *list (seq-sort 'string< *list))
+        *list
+    )
+)
+
+(defun 解析签名 (*list)
+    (let*
+        (
+            (*signature nil)
+            (*newline-index nil)
+        )
+        (dolist (*block *list)
+            (*make-object-oriented-like *block)
+            (setq *signature (*block :signature))
+            (setq *newline-index (*get-newline-index *signature 0 :forward))
+            (setq *signature
+                (if (null *newline-index)
+                    *signature
+                    (substring *signature 0 *newline-index)
+                )
+            )
+            (princ (format "%s结束了\n" *signature) qxf-buffer-side-bar)
+        )
     )
 )
 
 (defun qxf-render-lisp-outline
     ()
     (interactive)
-    (*list-outmost-statements)
+    (解析签名 (*list-outmost-blocks))
     :defun-end
 )
-(define-key global-map (kbd "C-c |") 'qxf-render-lisp-outline)
+(*bind "C-c |" qxf-render-lisp-outline)
 
 (defun qxf-focus-side-bar
     ()
     (interactive)
     (*render-side-bar)
-    (select-window qxf-window-side-bar)
 )
-(define-key global-map (kbd "C-c \\") 'qxf-focus-side-bar)
+(*bind "C-c \\" qxf-focus-side-bar)
 
 (defun qxf-make-mic-array
     ()
     (interactive)
     (shell-command (format "date && cd %s/build && make -j 8 && ./listdevs" qxf-mic-array-root))
 )
-(define-key global-map (kbd "C-c 1") 'qxf-make-mic-array)
+(*bind "C-c 1" qxf-make-mic-array)
 
 (defun qxf-cmake-mic-array
     ()
@@ -668,7 +724,7 @@
     (shell-command (format "date && cd %s/build && cmake .." qxf-mic-array-root))
     :defun-end
 )
-(define-key global-map (kbd "C-c 2") 'qxf-cmake-mic-array)
+(*bind "C-c 2" qxf-cmake-mic-array)
 
 (defun qxf-layout-3-pane
     ()
@@ -679,37 +735,50 @@
     (shell-command "echo Make shell area.")
     (setq qxf-window-shell-out (split-window nil -20 'below))
     (set-window-buffer qxf-window-shell-out "*Shell Command Output*")
-    (setq qxf-window-side-bar (split-window nil (+ 120 (*get-line-number-width)) 'left))
+    (setq qxf-window-side-bar
+        (split-window nil (+ 120 (*get-line-number-width))
+            'left
+        )
+    )
     (set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
     (*render-side-bar)
     (shell-command "echo Initialized shell area.")
 )
-(define-key global-map (kbd "C-c 0") 'qxf-layout-3-pane)
+(*bind "C-c 0" qxf-layout-3-pane)
 
 (defun qxf-layout-2-pane
     ()
     (interactive)
     (qxf-focus-editor)
     (delete-other-windows)
-    (setq qxf-window-side-bar (split-window nil (+ 120 (*get-line-number-width)) 'left))
+    (setq qxf-window-side-bar
+        (split-window nil (+ 120 (*get-line-number-width))
+            'left
+        )
+    )
     (set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
     (*render-side-bar)
     :defun-end
 )
-(define-key global-map (kbd "C-c 9") 'qxf-layout-2-pane)
+(*bind "C-c 9" qxf-layout-2-pane)
 
-(defun qxf-insert-command (-command-name)
-    (interactive "sCommand-name:")
-    (insert (format qxf-insertion-template -command-name -command-name))
+(defun qxf-insert-command (*template-type *command-name)
+    (interactive "sTemplate-type:\nsCommand-name:")
+    (insert
+        (format
+            (lax-plist-get qxf-insertion-templates *template-type)
+            *command-name *command-name
+        )
+    )
     :defun-end
 )
-(define-key global-map (kbd "C-c i") 'qxf-insert-command)
+(*bind "C-c i" qxf-insert-command)
 
 (defun qxf-set-c-offset ()
     (interactive)
     (set-variable 'c-basic-offset 4)
 )
-(define-key global-map (kbd "C-c 4") 'qxf-set-c-offset)
+(*bind "C-c 4" qxf-set-c-offset)
 
 (defun *clamp-string (*string *width &optional *is-left)
     (let*
@@ -731,31 +800,41 @@
         (
             (*buffer-name (buffer-name *buffer))
             (*file-path (buffer-file-name *buffer))
-            (*should-render (stringp *file-path))
-            (*directory-path (if *should-render (file-name-directory *file-path) nil))
+            (*directory-path (file-name-directory *file-path))
         )
-        (when *should-render
-            (insert
-                (format "[%-16s | %s]\n"
-                    (*clamp-string *buffer-name 16)
-                    (*clamp-string *directory-path 16 t)
-                )
+        (insert
+            (format "[%-16s | %s]\n"
+                (*clamp-string *buffer-name 16)
+                (*clamp-string *directory-path 16 t)
             )
         )
     )
     :end-defun
 )
 
-(defun *get-line-number-width
-    ()
+(defun *get-line-number-width ()
     (+ 2 (length (format "%d" (count-lines (point-min) (point-max)))))
+)
+
+(defun *update-opened-buffers ()
+    (let*
+        (
+            (*x nil)
+        )
+        (setq qxf-opened-buffers '())
+        (dolist (*buffer (buffer-list))
+            (when (stringp (buffer-file-name *buffer))
+                (push *buffer qxf-opened-buffers)
+            )
+        )
+    )
 )
 
 (defun *render-side-bar ()
     (with-current-buffer qxf-buffer-side-bar
         (erase-buffer)
         (insert (format "%s\n" (current-time-string)))
-        (dolist (*buffer (buffer-list))
+        (dolist (*buffer qxf-opened-buffers)
             (*render-entry *buffer)
         )
     )

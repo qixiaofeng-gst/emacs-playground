@@ -2,5 +2,6 @@
     ()
     (interactive)
     (prin1 "Command placeholder.")
-    :defun-end)
+    :defun-end
+)
 (define-key global-map (kbd "C-c t") '%s)
