@@ -48,6 +48,29 @@
     )
 )
 
+(defun *get-lines (*string)
+    (let*
+        (
+            (*lines '())
+            (*length (length *string))
+            (*start-index 0)
+            (*end-index nil)
+        )
+        (catch :break
+            (while (< *start-index *length)
+                (setq *end-index (*get-newline-index *string *start-index :forward))
+                (when (null *end-index)
+                    (push (substring *string *start-index) *lines)
+                    (throw :break t)
+                )
+                (push (substring *string *start-index *end-index) *lines)
+                (setq *start-index (1+ *end-index))
+            )
+        )
+        (reverse *lines)
+    )
+)
+
 (defun *get-file-contents (*file-path)
     (with-temp-buffer
         (insert-file-contents *file-path)

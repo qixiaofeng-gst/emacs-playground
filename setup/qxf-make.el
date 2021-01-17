@@ -77,6 +77,7 @@
 ;      * template Load from file.
 ; DONE Show more information for entries in sidebar.
 ; DONE Implement [C-c "], [C-c [] and [C-c {] inputing pair shortcut.
+; DONE Provide a function for retrieving lines(without \n) from string.
 ; FIXED [C-c q] Spaces at line-end.
 ; FIXED [C-c f] printed a lot things.
 ; FIXED [C-c q] Error on line with only empty string.
@@ -320,6 +321,7 @@
             (*readed-b nil)
             (*test-map nil)
             (*test-list '())
+            (*lines nil)
         )
         (*init-outline-entry *test-map "hello signature" 123)
         (with-temp-buffer
@@ -347,9 +349,13 @@
         ; Test for with-temp-buffer
         (prin1 *test qxf-buffer-side-bar)
         (prin1 *string qxf-buffer-side-bar)
-        (prin1 *readed qxf-buffer-side-bar)
+        (setq *lines (*get-lines *string))
+        (dolist (*line *lines)
+            (princ *line qxf-buffer-side-bar)
+        )
+        (print *readed qxf-buffer-side-bar)
         (prin1 *readed-a qxf-buffer-side-bar)
-        (prin1 *readed-b qxf-buffer-side-bar)
+        (print *readed-b qxf-buffer-side-bar)
         ; Test for other things.
         (princ "test print" *test)
         (*out "=======")
@@ -588,24 +594,10 @@
     (interactive)
     (let*
         (
-            (*string nil)
-            (*start-index 0)
-            (*end-index nil)
-            (*path-to-open nil)
-            (*point nil)
+            (*lines (*get-lines (*get-file-contents qxf-focus-record)))
+            (*path-to-open (elt *lines 0))
+            (*point (string-to-number (elt *lines 1)))
         )
-        (setq
-            *string
-            (with-temp-buffer
-                (insert-file-contents qxf-focus-record)
-                (buffer-substring-no-properties (point-min) (point-max))
-            )
-        )
-        (setq *end-index (*get-newline-index *string *start-index :forward))
-        (setq *path-to-open (substring *string *start-index *end-index))
-        (setq *start-index (1+ *end-index))
-        (setq *end-index (*get-newline-index *string *start-index :forward))
-        (setq *point (string-to-number (substring *string *start-index *end-index)))
         (qxf-focus-editor)
         (find-file *path-to-open)
         (goto-char *point)
