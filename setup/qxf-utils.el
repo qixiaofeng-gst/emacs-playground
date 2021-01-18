@@ -1,14 +1,17 @@
 (provide 'qxf-utils)
 
+(defalias '于 'defmacro)
+(defalias '道 'defun)
+
 ; {[Macro] defmacro name args [doc] [declare] body...}
-(defmacro ++ (*number &optional *increment)
+(于 ++ (*number &optional *increment)
     (if (eq nil *increment)
         `(setq ,*number (1+ ,*number))
         `(setq ,*number (+ ,*increment ,*number))
     )
 )
 
-(defmacro *make-object-oriented-like (*object)
+(于 *make-object-oriented-like (*object)
     `(fset (quote ,*object)
         (lambda (*key &optional *value)
             (if (eq nil *value)
@@ -19,7 +22,7 @@
     )
 )
 
-(defmacro *init-outline-entry (*object *signature *line-number)
+(于 *init-outline-entry (*object *signature *line-number)
     `(progn
         (*make-object-oriented-like ,*object)
         (setq ,*object (list :signature ,*signature :line-number ,*line-number))
@@ -48,7 +51,7 @@
     )
 )
 
-(defun *get-lines (*string)
+(道 *get-lines (*string)
     (let*
         (
             (*lines '())

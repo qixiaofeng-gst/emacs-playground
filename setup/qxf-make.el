@@ -40,10 +40,20 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
-; TODO Implement file outline. List functions with sort and line numbers. [C-c |]
-; TODO Implement function template.
-; TODO Investigate the batch mode.
-; TODO Design naming convention for function, command, variable and macro.
+; Original open-project workflow:
+"
+1. [C-c C-o]
+   1. Show a projects list. (List presented in the center of the screen.)
+   2. Open one of them with a number inputed from minibuffer.
+2. [C-c C-s]
+   1. Scan project configuration file.
+   2. Start from current directory to system root directory.
+   3. Record the found project done.
+3. [C-c C-c]
+   1. Scan project, abort if found else continue.
+   2. Create project configuration file under current directory.
+"
+
 ; TODO Sidebar for available buffers.
 ;      *. Side-bar content save and load.
 ;      1. Show opened file buffers.
@@ -52,6 +62,9 @@
 ; TODO Implement the project concept.
 ;      1. Make the qxf-mic-array-root (actually is work-root) changeable.
 ;      2. Way for search the project root, perhaps a hidden config file.
+; TODO Made outline in function, macro and variable groups.
+; TODO Design naming convention for function, command, variable and macro.
+; TODO Investigate the batch mode.
 ; TODO Implement [C-c s] and [C-c r], convenient search, extract keyword at current point.
 ; TODO Local varialble rename.
 ; TODO Auto jump to definition/header/declaration.
@@ -91,6 +104,9 @@
 ; DONE Show more information for entries in sidebar.
 ; DONE Implement [C-c "], [C-c [] and [C-c {] inputing pair shortcut.
 ; DONE Provide a function for retrieving lines(without \n) from string.
+; DONE Implement file outline. List functions with sort and line numbers. [C-c |]
+; DONE Implement function template.
+
 ; FIXED [C-c q] Spaces at line-end.
 ; FIXED [C-c f] printed a lot things.
 ; FIXED [C-c q] Error on line with only empty string.
@@ -675,11 +691,14 @@
     )
 )
 
-(defun 解析签名 (*list)
+(defun *parse-signature (*list)
     (let*
         (
             (*signature nil)
             (*newline-index nil)
+            (*start-index nil)
+            (*end-index nil)
+            (*filtered-list nil)
         )
         (dolist (*block *list)
             (*make-object-oriented-like *block)
@@ -691,7 +710,34 @@
                     (substring *signature 0 *newline-index)
                 )
             )
-            (princ (format "%s结束了\n" *signature) qxf-buffer-side-bar)
+            (when (string-prefix-p "(def" *signature)
+                (setq *start-index (*get-space-index *signature 0 :forward))
+                (if (null *start-index)
+                    (setq *signature "**check-code**")
+                    (++ *start-index)
+                    (setq *end-index (*get-space-index *signature *start-index :forward))
+                    (setq *signature (substring *signature *start-index *end-index))
+                )
+                (*block :signature *signature)
+                (push *block *filtered-list)
+            )
+        )
+        (setq *filtered-list
+            (seq-sort-by
+                (lambda (*e) (plist-get *e :signature))
+                #'string<
+                *filtered-list
+            )
+        )
+        (dolist (*entry *filtered-list)
+            (princ
+                (format
+                    "%s [%d]\n"
+                    (plist-get *entry :signature)
+                    (plist-get *entry :line-number)
+                )
+                qxf-buffer-side-bar
+            )
         )
     )
 )
@@ -699,7 +745,8 @@
 (defun qxf-render-lisp-outline
     ()
     (interactive)
-    (解析签名 (*list-outmost-blocks))
+    (*print-to-side-bar "所有定义：")
+    (*parse-signature (*list-outmost-blocks))
     :defun-end
 )
 (*bind "C-c |" qxf-render-lisp-outline)
