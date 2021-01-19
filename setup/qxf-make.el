@@ -40,8 +40,26 @@
     (*print-to-buffer *message qxf-buffer-side-bar)
 )
 
+; Design command rules:
+"
+All commands are prefixed with C-c.
+In this description, prefix is omitted. So [c] means [C-c c] actually.
+Rules:
+1. All file editing commands are single alphabets.
+   Advanced (not so frequently used) file editing commands could be uppercase.
+   [C-j] is an exception because it is used as a replacement of [RET] in emacs default.
+2. All file operation (open, close, create, etc.) are [C-<alphabet>].
+3. All layout, window, buffer operation are numbers or special symbols (-, +, |, /, DEL, RET, etc.).
+"
+
 ; Original open-project workflow:
 "
+Stores projects list in the user emacs directory.
+
+Project configuration file: .qe_project, it contains
+* Focus record for current project.
+* File access history for current project.
+
 1. [C-c C-o]
    1. Show a projects list. (List presented in the center of the screen.)
    2. Open one of them with a number inputed from minibuffer.
@@ -602,7 +620,7 @@
     ()
     (interactive)
     (setq qxf-string-cache (buffer-substring (region-beginning) (region-end)))
-    (keyboard-quit)
+    (deactivate-mark t)
 )
 (*bind "C-c c" qxf-copy-region)
 
