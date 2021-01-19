@@ -1,7 +1,7 @@
 (defun c6-%s
     ()
     (interactive)
-    (prin1 "Command placeholder.")
+    (princ "Command placeholder.")
     :defun-end
 )
 (define-key global-map (kbd "C-c t") 'c6-%s)

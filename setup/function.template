@@ -1,7 +1,7 @@
 (defun f7-%s
     (let*
         (
-            (*x nil)
+            (l4-x nil)
         )
         (princ "TODO Implement f7-%s.")
     )
