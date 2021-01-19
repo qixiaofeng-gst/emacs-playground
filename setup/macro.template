@@ -1,0 +1,3 @@
+(defmacro m4-%s (l4-x)
+    `(print (format "Placeholder for m4-%s. %%s" ,l4-x))
+)

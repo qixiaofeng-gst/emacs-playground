@@ -1,8 +1,8 @@
-(defun %s
+(defun f7-%s
     (let*
         (
             (*x nil)
         )
-        (princ "TODO Implement %s.")
+        (princ "TODO Implement f7-%s.")
     )
 )

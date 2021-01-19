@@ -6,8 +6,9 @@
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
 (defvar qxf-insertion-templates
     (list
-        "cmd" (*get-file-contents "~/.emacs.d/setup/command.template")
-        "fun" (*get-file-contents "~/.emacs.d/setup/function.template")
+        "f7" (*get-file-contents "~/.emacs.d/setup/function.template")
+        "c6" (*get-file-contents "~/.emacs.d/setup/command.template")
+        "m4" (*get-file-contents "~/.emacs.d/setup/macro.template")
     )
 )
 
@@ -52,39 +53,27 @@ Rules:
 3. All layout, window, buffer operation are numbers or special symbols (-, +, |, /, DEL, RET, etc.).
 "
 
-; Original open-project workflow:
+; Naming conventions:
 "
-Stores projects list in the user emacs directory.
-
-Project configuration file: .qe_project, it contains
-* Focus record for current project.
-* File access history for current project.
-
-1. [C-c C-o]
-   1. Show a projects list. (List presented in the center of the screen.)
-   2. Open one of them with a number inputed from minibuffer.
-2. [C-c C-s]
-   1. Scan project configuration file.
-   2. Start from current directory to system root directory.
-   3. Record the found project done.
-3. [C-c C-c]
-   1. Scan project, abort if found else continue.
-   2. Create project configuration file under current directory.
+Function: prefixed with f7-
+Command: prefixed with c6-
+Variable: global ones prefixed with g5-
+          local ones prefixed with l4-
+Macro: prefixed with m4-
 "
 
+; TODO Implement the project concept.
+;      1. Make the qxf-mic-array-root (actually is work-root) changeable.
+;      2. Way for search the project root, perhaps a hidden config file.
 ; TODO Sidebar for available buffers.
 ;      *. Side-bar content save and load.
 ;      1. Show opened file buffers.
 ;      2. Add [C-c <down>] and [C-c <up>] for editor switch.
 ;      3. Perhaps use blur hook of editor window to referesh the side-bar.
-; TODO Implement the project concept.
-;      1. Make the qxf-mic-array-root (actually is work-root) changeable.
-;      2. Way for search the project root, perhaps a hidden config file.
+; TODO Varialble rename.
 ; TODO Made outline in function, macro and variable groups.
-; TODO Design naming convention for function, command, variable and macro.
 ; TODO Investigate the batch mode.
 ; TODO Implement [C-c s] and [C-c r], convenient search, extract keyword at current point.
-; TODO Local varialble rename.
 ; TODO Auto jump to definition/header/declaration.
 
 ; DONE Hide the menu bar in qxf-general.el.
@@ -124,6 +113,7 @@ Project configuration file: .qe_project, it contains
 ; DONE Provide a function for retrieving lines(without \n) from string.
 ; DONE Implement file outline. List functions with sort and line numbers. [C-c |]
 ; DONE Implement function template.
+; DONE Design naming convention for function, command, variable and macro.
 
 ; FIXED [C-c q] Spaces at line-end.
 ; FIXED [C-c f] printed a lot things.
@@ -594,26 +584,53 @@ Project configuration file: .qe_project, it contains
 )
 (*bind "C-c a" qxf-focus-line-beginning)
 
+(defmacro m4-cut-current-line (l4-variable)
+    `(let*
+        (
+            (l4-point (point))
+            (l4-start-point (line-beginning-position))
+            (l4-offset (- l4-point l4-start-point))
+            (l4-string
+                (delete-and-extract-region l4-start-point (1+ (line-end-position)))
+            )
+        )
+        (setq ,l4-variable (list :offset l4-offset :string l4-string))
+        (*make-object-oriented-like ,l4-variable)
+    )
+)
+
 (defun qxf-move-line-down
     ()
     (interactive)
-    (let
-	((-temp-string (delete-and-extract-region (line-beginning-position) (1+ (line-end-position)))))
-	(forward-line 1)
-	(insert -temp-string)
-	(forward-line -1))
-    :defun-end)
+    (let*
+        (
+            (l4-line nil)
+        )
+        (m4-cut-current-line l4-line)
+        (forward-line 1)
+        (insert (l4-line :string))
+        (forward-line -1)
+        (forward-char (l4-line :offset))
+    )
+    :defun-end
+)
 (*bind "C-c n" qxf-move-line-down)
 
 (defun qxf-move-line-up
     ()
     (interactive)
     (let
-	((-temp-string (delete-and-extract-region (line-beginning-position) (1+ (line-end-position)))))
-	(forward-line -1)
-	(insert -temp-string)
-	(forward-line -1))
-    :defun-end)
+        (
+            (l4-line nil)
+        )
+        (m4-cut-current-line l4-line)
+        (forward-line -1)
+        (insert (l4-line :string))
+        (forward-line -1)
+        (forward-char (l4-line :offset))
+    )
+    :defun-end
+)
 (*bind "C-c p" qxf-move-line-up)
 
 (defun qxf-copy-region
@@ -828,7 +845,7 @@ Project configuration file: .qe_project, it contains
 (*bind "C-c 9" qxf-layout-2-pane)
 
 (defun qxf-insert-command (*template-type *command-name)
-    (interactive "sTemplate-type:\nsCommand-name:")
+    (interactive "sTemplate-type:\nsTarget-name:")
     (insert
         (format
             (lax-plist-get qxf-insertion-templates *template-type)
