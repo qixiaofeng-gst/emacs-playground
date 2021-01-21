@@ -4,6 +4,7 @@
 
 (defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
+(defconst g5-opened-buffers-record "~/.emacs.d/backup/opened-buffers-record.txt")
 (defvar qxf-insertion-templates
     (list
         "f7" (*get-file-contents "~/.emacs.d/setup/function.template")
@@ -28,9 +29,15 @@
 
 (add-hook 'buffer-list-update-hook '*update-opened-buffers)
 (add-hook 'kill-emacs-hook 'qxf-record-focus)
+(add-hook 'kill-emacs-hook 'f7-save-opened-buffers)
 
-(defmacro *bind (*keys *command)
-    `(define-key global-map (kbd ,*keys) (quote ,*command))
+(defun f7-save-opened-buffers ()
+    (with-temp-file g5-opened-buffers-record
+        (dolist (l4-buffer qxf-opened-buffers)
+            (insert (format "%s\n" (buffer-name l4-buffer)))
+            (insert (format "%s\n" (buffer-file-name l4-buffer)))
+        )
+    )
 )
 
 (defun *append-to-side-bar (*message)
@@ -78,7 +85,7 @@
     ; (isearch-repeat 'forward)
     :defun-end
 )
-(*bind "C-c s" qxf-search-word)
+(m4-bind "C-c s" qxf-search-word)
 
 (defun qxf-jump-to-previous-empty-line
     ()
@@ -87,7 +94,7 @@
     (forward-char)
     :defun-end
 )
-(*bind "C-c -" qxf-jump-to-previous-empty-line)
+(m4-bind "C-c -" qxf-jump-to-previous-empty-line)
 
 (defun qxf-jump-to-next-empty-line
     ()
@@ -96,7 +103,7 @@
     (backward-char)
     :defun-end
 )
-(*bind "C-c _" qxf-jump-to-next-empty-line)
+(m4-bind "C-c _" qxf-jump-to-next-empty-line)
 
 (defun qxf-auto-insert-parentheses
     ()
@@ -119,7 +126,7 @@
     )
     :defun-end
 )
-(*bind "C-c (" qxf-auto-insert-parentheses)
+(m4-bind "C-c (" qxf-auto-insert-parentheses)
 
 (defun *auto-insert-paired (*pair)
     (insert *pair)
@@ -140,7 +147,7 @@
     )
     :defun-end
 )
-(*bind "C-c C-j" qxf-auto-expand-empty-line)
+(m4-bind "C-c C-j" qxf-auto-expand-empty-line)
 
 (defun qxf-auto-insert-double-quotes
     ()
@@ -148,7 +155,7 @@
     (*auto-insert-paired "\"\"")
     :defun-end
 )
-(*bind "C-c \"" qxf-auto-insert-double-quotes)
+(m4-bind "C-c \"" qxf-auto-insert-double-quotes)
 
 (defun qxf-auto-insert-brackets
     ()
@@ -156,7 +163,7 @@
     (*auto-insert-paired "[]")
     :defun-end
 )
-(*bind "C-c [" qxf-auto-insert-brackets)
+(m4-bind "C-c [" qxf-auto-insert-brackets)
 
 (defun qxf-auto-insert-braces
     ()
@@ -164,7 +171,7 @@
     (*auto-insert-paired "{}")
     :defun-end
 )
-(*bind "C-c {" qxf-auto-insert-braces)
+(m4-bind "C-c {" qxf-auto-insert-braces)
 
 (defun qxf-kill-line
     ()
@@ -175,7 +182,7 @@
     (end-of-line)
     :defun-end
 )
-(*bind "C-c k" qxf-kill-line)
+(m4-bind "C-c k" qxf-kill-line)
 
 (defun qxf-backtab-trim-inner-spaces
     ()
@@ -227,7 +234,7 @@
     )
     :defun-end
 )
-(*bind "<backtab>" qxf-backtab-trim-inner-spaces)
+(m4-bind "<backtab>" qxf-backtab-trim-inner-spaces)
 
 (defun qxf-jump-to-nearest-block-start
     ()
@@ -235,7 +242,7 @@
     (goto-char (+ 2 (*get-nearest-block-start (buffer-string) (- (point) 1))))
     :defun-end
 )
-(*bind "C-c b" qxf-jump-to-nearest-block-start)
+(m4-bind "C-c b" qxf-jump-to-nearest-block-start)
 
 (defun qxf-jump-to-nearest-block-end
     ()
@@ -251,7 +258,7 @@
     )
     :defun-end
 )
-(*bind "C-c f" qxf-jump-to-nearest-block-end)
+(m4-bind "C-c f" qxf-jump-to-nearest-block-end)
 
 (defun qxf-test-scan-text
     ()
@@ -270,7 +277,7 @@
     (*append-to-side-bar (format "%s" (eq 1 1)))
     (*append-to-side-bar (format "%s" (eq "a" "a")))
     :defun-end)
-(*bind "C-c t" qxf-test-scan-text)
+(m4-bind "C-c t" qxf-test-scan-text)
 
 (defun qxf-temporary-test
     ()
@@ -342,7 +349,7 @@
     )
     :defun-end
 )
-(*bind "C-c t" qxf-temporary-test)
+(m4-bind "C-c t" qxf-temporary-test)
 
 (defun qxf-create-newline
     ()
@@ -362,7 +369,7 @@
     )
     :defun-end
 )
-(*bind "C-c j" qxf-create-newline)
+(m4-bind "C-c j" qxf-create-newline)
 
 (defun *format-form (*string-form &optional *indent)
     (when (eq nil *indent)
@@ -469,7 +476,7 @@
     )
     :defun-end
 )
-(*bind "C-c q" qxf-format-lisp)
+(m4-bind "C-c q" qxf-format-lisp)
 
 (defun qxf-duplicate-line
     ()
@@ -489,7 +496,7 @@
     )
     :defun-end
 )
-(*bind "C-c d" qxf-duplicate-line)
+(m4-bind "C-c d" qxf-duplicate-line)
 
 (defun qxf-focus-line-beginning
     ()
@@ -501,7 +508,7 @@
     )
     :defun-end
 )
-(*bind "C-c a" qxf-focus-line-beginning)
+(m4-bind "C-c a" qxf-focus-line-beginning)
 
 (defmacro m4-cut-current-line (l4-variable)
     `(let*
@@ -533,7 +540,7 @@
     )
     :defun-end
 )
-(*bind "C-c n" qxf-move-line-down)
+(m4-bind "C-c n" qxf-move-line-down)
 
 (defun qxf-move-line-up
     ()
@@ -550,7 +557,7 @@
     )
     :defun-end
 )
-(*bind "C-c p" qxf-move-line-up)
+(m4-bind "C-c p" qxf-move-line-up)
 
 (defun qxf-copy-region
     ()
@@ -558,14 +565,14 @@
     (setq qxf-string-cache (buffer-substring (region-beginning) (region-end)))
     (deactivate-mark t)
 )
-(*bind "C-c c" qxf-copy-region)
+(m4-bind "C-c c" qxf-copy-region)
 
 (defun qxf-paste
     ()
     (interactive)
     (insert qxf-string-cache)
 )
-(*bind "C-c y" qxf-paste)
+(m4-bind "C-c y" qxf-paste)
 
 (defun *record-current-buffer (*buffer *point)
     (let*
@@ -582,7 +589,7 @@
     (*record-current-buffer (current-buffer) (point))
     (princ "Recorded current focus.")
 )
-(*bind "C-c DEL" qxf-record-focus)
+(m4-bind "C-c DEL" qxf-record-focus)
 
 (defun qxf-load-record
     ()
@@ -599,7 +606,7 @@
         (princ "Loaded focus record.")
     )
 )
-(*bind "C-c =" qxf-load-record)
+(m4-bind "C-c =" qxf-load-record)
 
 (defun qxf-focus-editor
     ()
@@ -607,7 +614,7 @@
     (*render-side-bar)
     (select-window qxf-window-editor)
 )
-(*bind "C-c e" qxf-focus-editor)
+(m4-bind "C-c e" qxf-focus-editor)
 
 (defun *list-outmost-blocks ()
     (let*
@@ -703,21 +710,21 @@
     (*parse-signature (*list-outmost-blocks))
     :defun-end
 )
-(*bind "C-c |" qxf-render-lisp-outline)
+(m4-bind "C-c |" qxf-render-lisp-outline)
 
 (defun qxf-focus-side-bar
     ()
     (interactive)
     (*render-side-bar)
 )
-(*bind "C-c \\" qxf-focus-side-bar)
+(m4-bind "C-c \\" qxf-focus-side-bar)
 
 (defun qxf-make-mic-array
     ()
     (interactive)
     (shell-command (format "date && cd %s/build && make -j 8 && ./listdevs" qxf-mic-array-root))
 )
-(*bind "C-c 1" qxf-make-mic-array)
+(m4-bind "C-c 1" qxf-make-mic-array)
 
 (defun qxf-cmake-mic-array
     ()
@@ -725,7 +732,7 @@
     (shell-command (format "date && cd %s/build && cmake .." qxf-mic-array-root))
     :defun-end
 )
-(*bind "C-c 2" qxf-cmake-mic-array)
+(m4-bind "C-c 2" qxf-cmake-mic-array)
 
 (defun qxf-layout-3-pane
     ()
@@ -745,7 +752,7 @@
     (*render-side-bar)
     (shell-command "echo Initialized shell area.")
 )
-(*bind "C-c 0" qxf-layout-3-pane)
+(m4-bind "C-c 0" qxf-layout-3-pane)
 
 (defun qxf-layout-2-pane
     ()
@@ -761,7 +768,7 @@
     (*render-side-bar)
     :defun-end
 )
-(*bind "C-c 9" qxf-layout-2-pane)
+(m4-bind "C-c 9" qxf-layout-2-pane)
 
 (defun qxf-insert-command (*template-type *command-name)
     (interactive "sTemplate-type:\nsTarget-name:")
@@ -773,13 +780,13 @@
     )
     :defun-end
 )
-(*bind "C-c i" qxf-insert-command)
+(m4-bind "C-c i" qxf-insert-command)
 
 (defun qxf-set-c-offset ()
     (interactive)
     (set-variable 'c-basic-offset 4)
 )
-(*bind "C-c 4" qxf-set-c-offset)
+(m4-bind "C-c 4" qxf-set-c-offset)
 
 (defun *clamp-string (*string *width &optional *is-left)
     (let*
