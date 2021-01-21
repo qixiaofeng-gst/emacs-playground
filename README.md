@@ -33,6 +33,8 @@ https://github.com/bbatsov/zenburn-emacs
 
 ## Work log
 ### TODO
+* Update opened-buffers-record but not overwrite.
+* Conveniently open buffer throw opened-buffers-record.
 * Implement the project concept.
   1. Make the qxf-mic-array-root (actually is work-root) changeable.
   1. Way for search the project root, perhaps a hidden config file.
