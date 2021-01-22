@@ -18,7 +18,7 @@
 
 (defvar qxf-buffer-side-bar (get-buffer-create "*side-bar*"))
 (defvar qxf-window-side-bar nil)
-(defvar qxf-opened-buffers '())
+(defvar g5-opened-buffers '())
 
 (defvar qxf-string-cache "")
 (defvar qxf-code-indent 4)
@@ -33,7 +33,7 @@
 
 (defun f7-save-opened-buffers ()
     (with-temp-file g5-opened-buffers-record
-        (dolist (l4-buffer qxf-opened-buffers)
+        (dolist (l4-buffer g5-opened-buffers)
             (insert (format "%s\n" (buffer-name l4-buffer)))
             (insert (format "%s\n" (buffer-file-name l4-buffer)))
         )
@@ -294,6 +294,7 @@
             (*test-map nil)
             (*test-list '())
             (*lines nil)
+            (l4-cons '("a" . "b"))
         )
         (*init-outline-entry *test-map "hello signature" 123)
         (with-temp-buffer
@@ -312,6 +313,8 @@
         ; Test for property list.
         (prin1 (plist-get (elt *test-list 0) :line-number) qxf-buffer-side-bar)
         (print (*test-map :one) qxf-buffer-side-bar)
+        (prin1 (car l4-cons) qxf-buffer-side-bar)
+        (print (cdr l4-cons) qxf-buffer-side-bar)
         (*test-map :one 111)
         (prin1 (plist-get *test-map :one) qxf-buffer-side-bar)
         (*test-map :three 333)
@@ -342,9 +345,9 @@
         (*out (format "?\\\":%s" ?\"))
         (*out (format "?\\\\:%s" ?\\))
         (*out (format "%s" (point)))
-        (*out (eq :test-const (read ":test-const")))
-        (*out (eq 'abc (make-symbol "abc")))
-        (*out (make-symbol "abc"))
+        (*out (qxf-*-stringify (eq :test-const (read ":test-const"))))
+        (*out (qxf-*-stringify (eq 'abc (make-symbol "abc"))))
+        (*out (qxf-*-stringify (equal "abc" "abc")))
         (*append-to-side-bar *to-print)
     )
     :defun-end
@@ -829,10 +832,10 @@
         (
             (*x nil)
         )
-        (setq qxf-opened-buffers '())
+        (setq g5-opened-buffers '())
         (dolist (*buffer (buffer-list))
             (when (stringp (buffer-file-name *buffer))
-                (push *buffer qxf-opened-buffers)
+                (push *buffer g5-opened-buffers)
             )
         )
     )
@@ -842,7 +845,7 @@
     (with-current-buffer qxf-buffer-side-bar
         (erase-buffer)
         (insert (format "%s\n" (current-time-string)))
-        (dolist (*buffer qxf-opened-buffers)
+        (dolist (*buffer g5-opened-buffers)
             (*render-entry *buffer)
         )
     )
