@@ -18,7 +18,15 @@
 
 (defvar qxf-buffer-side-bar (get-buffer-create "*side-bar*"))
 (defvar qxf-window-side-bar nil)
-(defvar g5-opened-buffers '())
+(defvar g5-opened-buffers
+    (let*
+        ((l4-list '()))
+        (dolist (l4-entry (*get-lines (*get-file-contents g5-opened-buffers-record)))
+	    (m4-insert-to-list (cons l4-entry :__:) l4-list)
+        )
+        l4-list
+    )
+)
 
 (defvar qxf-string-cache "")
 (defvar qxf-code-indent 4)
@@ -34,8 +42,7 @@
 (defun f7-save-opened-buffers ()
     (with-temp-file g5-opened-buffers-record
         (dolist (l4-buffer g5-opened-buffers)
-            (insert (format "%s\n" (buffer-name l4-buffer)))
-            (insert (format "%s\n" (buffer-file-name l4-buffer)))
+            (insert (format "%s\n" (car l4-buffer)))
         )
     )
 )
@@ -614,8 +621,8 @@
 (defun qxf-focus-editor
     ()
     (interactive)
-    (*render-side-bar)
     (select-window qxf-window-editor)
+    (*render-side-bar)
 )
 (m4-bind "C-c e" qxf-focus-editor)
 
@@ -737,6 +744,23 @@
 )
 (m4-bind "C-c 2" qxf-cmake-mic-array)
 
+(defun c6-toggle-debug-error
+    ()
+    (interactive)
+    (if (equal debug-on-error t)
+        (setq debug-on-error nil)
+        (setq debug-on-error t)
+    )
+    :defun-end
+)
+(define-key global-map (kbd "C-c 3") 'c6-toggle-debug-error)
+
+(defun qxf-set-c-offset ()
+    (interactive)
+    (set-variable 'c-basic-offset 4)
+)
+(m4-bind "C-c 4" qxf-set-c-offset)
+
 (defun qxf-layout-3-pane
     ()
     (interactive)
@@ -785,12 +809,6 @@
 )
 (m4-bind "C-c i" qxf-insert-command)
 
-(defun qxf-set-c-offset ()
-    (interactive)
-    (set-variable 'c-basic-offset 4)
-)
-(m4-bind "C-c 4" qxf-set-c-offset)
-
 (defun *clamp-string (*string *width &optional *is-left)
     (let*
         (
@@ -806,17 +824,18 @@
     )
 )
 
-(defun *render-entry (*buffer)
+(defun f7-render-buffer-entry (l4-pair)
     (let*
         (
-            (*buffer-name (buffer-name *buffer))
-            (*file-path (buffer-file-name *buffer))
+            (l4-buffer (cdr l4-pair))
+            (*buffer-name (if (eq :__: l4-buffer) (symbol-name :__:) (buffer-name l4-buffer)))
+            (*file-path (car l4-pair))
             (*directory-path (file-name-directory *file-path))
         )
         (insert
             (format "[%-16s | %s]\n"
                 (*clamp-string *buffer-name 16)
-                (*clamp-string *directory-path 16 t)
+                (*clamp-string (if (equal *buffer-name (symbol-name :__:)) *file-path *directory-path) 16 t)
             )
         )
     )
@@ -827,15 +846,20 @@
     (+ 2 (length (format "%d" (count-lines (point-min) (point-max)))))
 )
 
+(defmacro m4-remove-association (l4-key l4-alist)
+    `(setq ,l4-alist (assoc-delete-all ,l4-key ,l4-alist))
+)
+
 (defun *update-opened-buffers ()
     (let*
         (
-            (*x nil)
+            (l4-name nil)
         )
-        (setq g5-opened-buffers '())
         (dolist (*buffer (buffer-list))
-            (when (stringp (buffer-file-name *buffer))
-                (push *buffer g5-opened-buffers)
+            (setq l4-name (buffer-file-name *buffer))
+            (when (stringp l4-name)
+                (m4-remove-association l4-name g5-opened-buffers)
+		(m4-insert-to-list (cons l4-name *buffer) g5-opened-buffers)
             )
         )
     )
@@ -845,8 +869,8 @@
     (with-current-buffer qxf-buffer-side-bar
         (erase-buffer)
         (insert (format "%s\n" (current-time-string)))
-        (dolist (*buffer g5-opened-buffers)
-            (*render-entry *buffer)
+        (dolist (l4-pair g5-opened-buffers)
+            (f7-render-buffer-entry l4-pair)
         )
     )
     :end-defun

@@ -31,6 +31,10 @@
     )
 )
 
+(道 m4-insert-to-list (l4-value l4-list)
+    `(setq ,l4-list (push ,l4-value ,l4-list))
+)
+
 (道 *init-outline-entry (*object *signature *line-number)
     `(progn
         (*make-object-oriented-like ,*object)
