@@ -1,5 +1,6 @@
 (provide 'qxf-make)
 (require 'qxf-utils)
+(require 'qxf-sidebar)
 (require 'seq)
 
 (defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
@@ -33,9 +34,10 @@
 
 (with-current-buffer qxf-buffer-side-bar
     (setq display-line-numbers t)
+    (f7-sidebar-mode)
 )
 
-(add-hook 'buffer-list-update-hook '*update-opened-buffers)
+(add-hook 'buffer-list-update-hook 'f7-update-opened-buffers)
 (add-hook 'kill-emacs-hook 'qxf-record-focus)
 (add-hook 'kill-emacs-hook 'f7-save-opened-buffers)
 
@@ -850,7 +852,7 @@
     `(setq ,l4-alist (assoc-delete-all ,l4-key ,l4-alist))
 )
 
-(defun *update-opened-buffers ()
+(defun f7-update-opened-buffers ()
     (let*
         (
             (l4-name nil)
