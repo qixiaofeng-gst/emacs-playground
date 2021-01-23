@@ -6,7 +6,7 @@
         (
             (l4-keymap (make-sparse-keymap))
         )
-        (m4-bind "x" qxf-focus-editor)
+        ;(m4-bind "x" qxf-focus-editor)
         l4-keymap
     )
     "The keymap for sidebar."

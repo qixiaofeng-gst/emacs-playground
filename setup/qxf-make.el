@@ -21,9 +21,13 @@
 (defvar qxf-window-side-bar nil)
 (defvar g5-opened-buffers
     (let*
-        ((l4-list '()))
+        (
+            (l4-list '())
+            (l4-index 0)
+        )
         (dolist (l4-entry (*get-lines (*get-file-contents g5-opened-buffers-record)))
-	    (m4-insert-to-list (cons l4-entry :__:) l4-list)
+            (m4-insert-to-list (list l4-entry (vector :__: l4-index)) l4-list)
+            (++ l4-index)
         )
         l4-list
     )
@@ -62,12 +66,6 @@
 ; {[function] buffer-file-name &optional buffer}
 ; {[function] buffer-modified-p &optional buffer}
 ; {[macro] with-current-buffer buffer-or-name body...}
-
-; Align the outmost brackets pair.
-; TODO Validate the outmost begin line. 
-;      1. Only one open "(" allowed.
-;      2. If not valid, print message and jump to the second open "(".
-; TODO Align the 2, 3, ... brackets pair.
 ; {[function] elt sequence index}
 ; {[function] make-string count character &optional multibyte}
 ; {[Function] string-match regexp string &optional start}
@@ -77,7 +75,6 @@
 ; {[Macro] dotimes (var count [result]) body...}
 ; {add-to-list}
 ; ?\(, ?\)
-
 ; {[Special Form] cond (condition [body-forms...])...}
 ; {[Function] buffer-size &optional buffer}
 
@@ -95,6 +92,39 @@
     :defun-end
 )
 (m4-bind "C-c s" qxf-search-word)
+
+(defun c6-open-with-sidebar-index (l4-index)
+    (interactive "nSidebar index of file to open:")
+    (let*
+        (
+            (l4-entry (f7-find-opened-entry l4-index))
+        )
+        (if (null l4-entry)
+            (princ (format "Invalid input:%d" l4-index))
+            (find-file (elt l4-entry 0))
+        )
+    )
+    (f7-render-sidebar)
+)
+(m4-bind "C-c ]" c6-open-with-sidebar-index)
+
+(defun c6-close-with-sidebar-index
+    ()
+    (interactive)
+    (princ "Command placeholder.")
+    :defun-end
+)
+(m4-bind "C-c }" c6-close-with-sidebar-index)
+
+(defun f7-find-opened-entry (l4-target-index)
+    (catch :return
+        (dolist (l4-entry g5-opened-buffers)
+            (when (= (aref (elt l4-entry 1) 1) l4-target-index)
+                (throw :return l4-entry)
+            )
+        )
+    )
+)
 
 (defun qxf-jump-to-previous-empty-line
     ()
@@ -624,7 +654,7 @@
     ()
     (interactive)
     (select-window qxf-window-editor)
-    (*render-side-bar)
+    (f7-render-sidebar)
 )
 (m4-bind "C-c e" qxf-focus-editor)
 
@@ -727,7 +757,7 @@
 (defun qxf-focus-side-bar
     ()
     (interactive)
-    (*render-side-bar)
+    (f7-render-sidebar)
 )
 (m4-bind "C-c \\" qxf-focus-side-bar)
 
@@ -778,7 +808,7 @@
         )
     )
     (set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
-    (*render-side-bar)
+    (f7-render-sidebar)
     (shell-command "echo Initialized shell area.")
 )
 (m4-bind "C-c 0" qxf-layout-3-pane)
@@ -794,7 +824,7 @@
         )
     )
     (set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
-    (*render-side-bar)
+    (f7-render-sidebar)
     :defun-end
 )
 (m4-bind "C-c 9" qxf-layout-2-pane)
@@ -811,39 +841,6 @@
 )
 (m4-bind "C-c i" qxf-insert-command)
 
-(defun *clamp-string (*string *width &optional *is-left)
-    (let*
-        (
-            (*length (length *string))
-        )
-        (if (> *length *width)
-            (if *is-left
-                (concat "..." (substring *string (- *length (- *width 3))))
-                (concat (substring *string 0 (- *width 3)) "...")
-            )
-            *string
-        )
-    )
-)
-
-(defun f7-render-buffer-entry (l4-pair)
-    (let*
-        (
-            (l4-buffer (cdr l4-pair))
-            (*buffer-name (if (eq :__: l4-buffer) (symbol-name :__:) (buffer-name l4-buffer)))
-            (*file-path (car l4-pair))
-            (*directory-path (file-name-directory *file-path))
-        )
-        (insert
-            (format "[%-16s | %s]\n"
-                (*clamp-string *buffer-name 16)
-                (*clamp-string (if (equal *buffer-name (symbol-name :__:)) *file-path *directory-path) 16 t)
-            )
-        )
-    )
-    :end-defun
-)
-
 (defun *get-line-number-width ()
     (+ 2 (length (format "%d" (count-lines (point-min) (point-max)))))
 )
@@ -856,18 +853,28 @@
     (let*
         (
             (l4-name nil)
+            (l4-index 0)
         )
-        (dolist (*buffer (buffer-list))
-            (setq l4-name (buffer-file-name *buffer))
+        (dolist (l4-buffer (buffer-list))
+            (setq l4-name (buffer-file-name l4-buffer))
             (when (stringp l4-name)
                 (m4-remove-association l4-name g5-opened-buffers)
-		(m4-insert-to-list (cons l4-name *buffer) g5-opened-buffers)
+                (m4-insert-to-list (list l4-name (vector l4-buffer l4-index)) g5-opened-buffers)
+                (++ l4-index)
             )
+        )
+        (setq g5-opened-buffers
+            (seq-sort-by (lambda (l4-entry) (elt l4-entry 0)) #'string< g5-opened-buffers)
+        )
+        (setq l4-index 0)
+        (dolist (l4-entry g5-opened-buffers)
+            (aset (elt l4-entry 1) 1 l4-index)
+            (++ l4-index)
         )
     )
 )
 
-(defun *render-side-bar ()
+(defun f7-render-sidebar ()
     (with-current-buffer qxf-buffer-side-bar
         (erase-buffer)
         (insert (format "%s\n" (current-time-string)))
@@ -875,7 +882,41 @@
             (f7-render-buffer-entry l4-pair)
         )
     )
+)
+
+(defun f7-render-buffer-entry (l4-pair)
+    (let*
+        (
+            (l4-values (elt l4-pair 1))
+            (l4-buffer (aref l4-values 0))
+            (l4-buffer-name (if (eq :__: l4-buffer) (symbol-name :__:) (buffer-name l4-buffer)))
+            (*file-path (car l4-pair))
+            (*directory-path (file-name-directory *file-path))
+        )
+        (insert
+            (format "[%-16s | %32s | %3d]\n"
+                (f7-clamp-string l4-buffer-name 16)
+                (f7-clamp-string (if (equal l4-buffer-name (symbol-name :__:)) *file-path *directory-path) 32 t)
+                (aref l4-values 1)
+            )
+        )
+    )
     :end-defun
+)
+
+(defun f7-clamp-string (*string *width &optional *is-left)
+    (let*
+        (
+            (*length (length *string))
+        )
+        (if (> *length *width)
+            (if *is-left
+                (concat "..." (substring *string (- *length (- *width 3))))
+                (concat (substring *string 0 (- *width 3)) "...")
+            )
+            *string
+        )
+    )
 )
 
 (print "Loaded qxf-make.")

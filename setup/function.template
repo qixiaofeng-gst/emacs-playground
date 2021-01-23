@@ -1,4 +1,4 @@
-(defun f7-%s
+(defun f7-%s ()
     (let*
         (
             (l4-x nil)

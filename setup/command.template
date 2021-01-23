@@ -4,4 +4,4 @@
     (princ "Command placeholder.")
     :defun-end
 )
-(define-key global-map (kbd "C-c t") 'c6-%s)
+(m4-bind "C-c t" c6-%s)
