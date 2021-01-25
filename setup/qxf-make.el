@@ -111,7 +111,7 @@
 (defun c6-close-with-sidebar-index
     ()
     (interactive)
-    (princ "Command placeholder.")
+    (princ "Command placeholder. Intend to close and remove a opened entry.")
     :defun-end
 )
 (m4-bind "C-c }" c6-close-with-sidebar-index)
