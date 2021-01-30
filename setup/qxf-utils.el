@@ -97,21 +97,25 @@
     )
 )
 
-(defun *append-to-buffer (*message *buffer)
-    (with-current-buffer *buffer
-        (insert (format "%s\n" *message))
+(defun f7-append-to-buffer (l4-message l4-buffer)
+    (with-current-buffer l4-buffer
+        (let ((buffer-read-only))
+            (insert (format "%s\n" l4-message))
+        )
     )
 )
 
-(defun *print-to-buffer (*message *buffer)
-    (with-current-buffer *buffer
-        (erase-buffer)
-        (insert (format "%s\n" (current-time-string)))
-        (*append-to-buffer *message *buffer)
+(defun f7-print-to-buffer (l4-message l4-buffer)
+    (with-current-buffer l4-buffer
+        (let ((buffer-read-only nil))
+            (erase-buffer)
+            (insert (format "%s\n" (current-time-string)))
+            (f7-append-to-buffer l4-message l4-buffer)
+        )
     )
 )
 
-(defun *trim (*string)
+(defun f7-trim-string (*string)
     (let*
         (
             (*length (length *string))

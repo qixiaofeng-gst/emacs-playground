@@ -52,12 +52,12 @@
     )
 )
 
-(defun *append-to-side-bar (*message)
-    (*append-to-buffer *message qxf-buffer-side-bar)
+(defun f7-append-to-sidebar (l4-message)
+    (f7-append-to-buffer l4-message qxf-buffer-side-bar)
 )
 
-(defun *print-to-side-bar (*message)
-    (*print-to-buffer *message qxf-buffer-side-bar)
+(defun f7-print-to-sidebar (l4-message)
+    (f7-print-to-buffer l4-message qxf-buffer-side-bar)
 )
 
 ; {[function] buffer-list &optional frame}
@@ -301,19 +301,19 @@
 (defun qxf-test-scan-text
     ()
     (interactive)
-    (*print-to-side-bar "qxf-test-scan-text")
-    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello\")\"=====")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello\")()(\"world)!")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello\"))")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello\")\")")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello()")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello())")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello())\;")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello())\"")))
-    (*append-to-side-bar (format "====>>> %s" (*scan-for-unpaired "(hello())(")))
-    (*append-to-side-bar (format "%s" (eq 1 1)))
-    (*append-to-side-bar (format "%s" (eq "a" "a")))
+    (f7-print-to-sidebar "qxf-test-scan-text")
+    (f7-append-to-sidebar (format "====>>> %s" (*scan-for-unpaired "(hello\")\"=====")))
+    (f7-append-to-sidebar (format "====>>> %s" (*scan-for-unpaired "(hello\")()(\"world)!")))
+    (f7-append-to-sidebar (format "====>>> %s" (*scan-for-unpaired "(hello\"))")))
+    (f7-append-to-sidebar (format "====>>> %s" (*scan-for-unpaired "(hello")))
+    (f7-append-to-sidebar (format "====>>> %s" (*scan-for-unpaired "(hello\")\")")))
+    (f7-append-to-sidebar (format "====>>> %s" (*scan-for-unpaired "(hello()")))
+    (f7-append-to-sidebar (format "====>>> %s" (*scan-for-unpaired "(hello())")))
+    (f7-append-to-sidebar (format "====>>> %s" (*scan-for-unpaired "(hello())\;")))
+    (f7-append-to-sidebar (format "====>>> %s" (*scan-for-unpaired "(hello())\"")))
+    (f7-append-to-sidebar (format "====>>> %s" (*scan-for-unpaired "(hello())(")))
+    (f7-append-to-sidebar (format "%s" (eq 1 1)))
+    (f7-append-to-sidebar (format "%s" (eq "a" "a")))
     :defun-end)
 (m4-bind "C-c t" qxf-test-scan-text)
 
@@ -323,7 +323,7 @@
     (let
         (
             (*to-print "Test results:\n")
-            (*test (lambda (*in) (*append-to-side-bar (format "%s|" *in))))
+            (*test (lambda (*in) (f7-append-to-sidebar (format "%s|" *in))))
             (*out nil)
             (*string nil)
             (*readed nil)
@@ -347,7 +347,7 @@
         )
         (push *test-map *test-list)
         (fset '*out (lambda (*msg) (setq *to-print (format "%s%s\n" *to-print *msg))))
-        (*print-to-side-bar "Atomic test start.")
+        (f7-print-to-sidebar "Atomic test start.")
         ; Test for property list.
         (prin1 (plist-get (elt *test-list 0) :line-number) qxf-buffer-side-bar)
         (print (*test-map :one) qxf-buffer-side-bar)
@@ -386,7 +386,7 @@
         (*out (qxf-*-stringify (eq :test-const (read ":test-const"))))
         (*out (qxf-*-stringify (eq 'abc (make-symbol "abc"))))
         (*out (qxf-*-stringify (equal "abc" "abc")))
-        (*append-to-side-bar *to-print)
+        (f7-append-to-sidebar *to-print)
     )
     :defun-end
 )
@@ -416,7 +416,7 @@
     (when (eq nil *indent)
         (setq *indent 0)
     )
-    (setq *string-form (*trim *string-form))
+    (setq *string-form (f7-trim-string *string-form))
     (let*
         (
             (*indent-string (make-string (* *indent qxf-code-indent) ?\s))
@@ -448,7 +448,7 @@
             )
             (setq *unpaired-char (elt *string-form *unpaired-index))
             (when (not (eq *unpaired-char ?\())
-                (*append-to-side-bar (format "%c <<<" *unpaired-char))
+                (f7-append-to-sidebar (format "%c <<<" *unpaired-char))
                 (throw :return
                     (concat *indent-string "\; ERROR Only unpaired \"(\" allowed.\n" *string-form)
                 )
@@ -462,7 +462,7 @@
             (setq *close-newline-index (*get-newline-index *string-form *close-bracket-index :backward))
             (setq *close-line (substring *string-form (1+ *close-newline-index) *close-bracket-index))
             (setq *nonspace-index (*get-nonspace-index *close-line 0 :forward))
-            (setq *rest-string (*trim (substring *string-form (1+ *close-bracket-index) *length)))
+            (setq *rest-string (f7-trim-string (substring *string-form (1+ *close-bracket-index) *length)))
             (when (not (eq 0 (length *rest-string)))
                 (if (string-prefix-p "\n" *rest-string)
                     (progn
@@ -657,7 +657,7 @@
 )
 (m4-bind "C-c e" qxf-focus-editor)
 
-(defun *list-outmost-blocks ()
+(defun f7-list-outmost-blocks ()
     (let*
         (
             (*list '())
@@ -693,7 +693,7 @@
     )
 )
 
-(defun *parse-signature (*list)
+(defun f7-parse-defined-names (*list)
     (let*
         (
             (*signature nil)
@@ -732,13 +732,12 @@
             )
         )
         (dolist (*entry *filtered-list)
-            (princ
+            (f7-append-to-sidebar
                 (format
-                    "%s [%d]\n"
+                    "%s [%d]"
                     (plist-get *entry :signature)
                     (plist-get *entry :line-number)
                 )
-                qxf-buffer-side-bar
             )
         )
     )
@@ -747,9 +746,8 @@
 (defun qxf-render-lisp-outline
     ()
     (interactive)
-    (*print-to-side-bar "所有定义：")
-    (*parse-signature (*list-outmost-blocks))
-    :defun-end
+    (f7-print-to-sidebar "所有定义：")
+    (f7-parse-defined-names (f7-list-outmost-blocks))
 )
 (m4-bind "C-c |" qxf-render-lisp-outline)
 
@@ -875,10 +873,12 @@
 
 (defun f7-render-sidebar ()
     (with-current-buffer qxf-buffer-side-bar
-        (erase-buffer)
-        (insert (format "%s\n" (current-time-string)))
-        (dolist (l4-pair g5-opened-buffers)
-            (f7-render-buffer-entry l4-pair)
+        (let ((buffer-read-only nil))
+            (erase-buffer)
+            (insert (format "%s\n" (current-time-string)))
+            (dolist (l4-pair g5-opened-buffers)
+                (f7-render-buffer-entry l4-pair)
+            )
         )
     )
 )
