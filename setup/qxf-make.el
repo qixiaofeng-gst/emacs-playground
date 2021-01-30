@@ -26,7 +26,7 @@
             (l4-index 0)
         )
         (dolist (l4-entry (*get-lines (*get-file-contents g5-opened-buffers-record)))
-            (m4-insert-to-list (list l4-entry (vector :__: l4-index)) l4-list)
+            (m4-insert-to-list (list l4-entry (vector :_closed_: l4-index)) l4-list)
             (++ l4-index)
         )
         l4-list
@@ -803,7 +803,7 @@
     (setq qxf-window-shell-out (split-window nil -20 'below))
     (set-window-buffer qxf-window-shell-out "*Shell Command Output*")
     (setq qxf-window-side-bar
-        (split-window nil (+ 120 (*get-line-number-width))
+        (split-window nil (+ 120 (f7-get-line-number-width))
             'left
         )
     )
@@ -819,7 +819,7 @@
     (qxf-focus-editor)
     (delete-other-windows)
     (setq qxf-window-side-bar
-        (split-window nil (+ 120 (*get-line-number-width))
+        (split-window nil (+ 120 (f7-get-line-number-width))
             'left
         )
     )
@@ -841,7 +841,7 @@
 )
 (m4-bind "C-c i" qxf-insert-command)
 
-(defun *get-line-number-width ()
+(defun f7-get-line-number-width ()
     (+ 2 (length (format "%d" (count-lines (point-min) (point-max)))))
 )
 
@@ -889,14 +889,22 @@
         (
             (l4-values (elt l4-pair 1))
             (l4-buffer (aref l4-values 0))
-            (l4-buffer-name (if (eq :__: l4-buffer) (symbol-name :__:) (buffer-name l4-buffer)))
+            (l4-buffer-name
+                (if (eq :_closed_: l4-buffer) (symbol-name :_closed_:)
+                    (if (null (buffer-name l4-buffer))
+                        (symbol-name :_killed_:)
+                        (buffer-name l4-buffer)
+                    )
+                )
+            )
             (*file-path (car l4-pair))
             (*directory-path (file-name-directory *file-path))
         )
+        ; (message (format "While rendering buffer: %s" l4-buffer))
         (insert
             (format "[%-16s | %32s | %3d]\n"
                 (f7-clamp-string l4-buffer-name 16)
-                (f7-clamp-string (if (equal l4-buffer-name (symbol-name :__:)) *file-path *directory-path) 32 t)
+                (f7-clamp-string (if (equal l4-buffer-name (symbol-name :_closed_:)) *file-path *directory-path) 32 t)
                 (aref l4-values 1)
             )
         )

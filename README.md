@@ -33,7 +33,9 @@ https://github.com/bbatsov/zenburn-emacs
 
 ## Work log
 ### TODO
-* Update opened-buffers-record but not overwrite.
+* Record current point of buffers.
+* Create sidebar mode. refactor m4-bind.
+* kill-buffer command make sidebar entry name nil.
 * Conveniently open buffer throw opened-buffers-record.
 * Implement the project concept.
   1. Make the qxf-mic-array-root (actually is work-root) changeable.
@@ -88,6 +90,7 @@ https://github.com/bbatsov/zenburn-emacs
 * Implement file outline. List functions with sort and line numbers. [C-c |]
 * Implement function template.
 * Design naming convention for function, command, variable and macro.
+* Update opened-buffers-record but not overwrite.
 
 ### Fixed
 * [C-c q] Spaces at line-end.
