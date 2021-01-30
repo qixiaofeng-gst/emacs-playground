@@ -9,8 +9,11 @@
 
 ; {[Macro] defmacro name args [doc] [declare] body...}
 
-(道 m4-bind (*keys *command)
-    `(define-key global-map (kbd ,*keys) (quote ,*command))
+(道 m4-bind (l4-keys l4-command &optional l4-map)
+    (if (null l4-map)
+        `(define-key global-map (kbd ,l4-keys) (quote ,l4-command))
+        `(define-key ,l4-map (kbd ,l4-keys) (quote ,l4-command))
+    )
 )
 
 (道 ++ (*number &optional *increment)
@@ -20,7 +23,7 @@
     )
 )
 
-(道 *make-object-oriented-like (*object)
+(道 m4-make-object-oriented-like (*object)
     `(fset (quote ,*object)
         (lambda (*key &optional *value)
             (if (eq nil *value)
@@ -37,7 +40,7 @@
 
 (道 *init-outline-entry (*object *signature *line-number)
     `(progn
-        (*make-object-oriented-like ,*object)
+        (m4-make-object-oriented-like ,*object)
         (setq ,*object (list :signature ,*signature :line-number ,*line-number))
     )
 )

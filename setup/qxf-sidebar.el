@@ -6,7 +6,7 @@
         (
             (l4-keymap (make-sparse-keymap))
         )
-        ;(m4-bind "x" qxf-focus-editor)
+        (m4-bind "x" qxf-focus-editor l4-keymap)
         l4-keymap
     )
     "The keymap for sidebar."
@@ -14,7 +14,7 @@
 
 (defun f7-sidebar-mode ()
     (kill-all-local-variables)
-    ;(use-local-map qxf-sidebar-keymap)
+    (use-local-map qxf-sidebar-keymap)
     (setq
         major-mode 'f7-sidebar-mode
         mode-name "Sidebar"

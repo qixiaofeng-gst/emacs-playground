@@ -563,7 +563,7 @@
             )
         )
         (setq ,l4-variable (list :offset l4-offset :string l4-string))
-        (*make-object-oriented-like ,l4-variable)
+        (m4-make-object-oriented-like ,l4-variable)
     )
 )
 
@@ -704,7 +704,7 @@
             (*filtered-list nil)
         )
         (dolist (*block *list)
-            (*make-object-oriented-like *block)
+            (m4-make-object-oriented-like *block)
             (setq *signature (*block :signature))
             (setq *newline-index (*get-newline-index *signature 0 :forward))
             (setq *signature
