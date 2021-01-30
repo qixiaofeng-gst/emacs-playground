@@ -37,7 +37,6 @@
 (defvar qxf-code-indent 4)
 
 (with-current-buffer qxf-buffer-side-bar
-    (setq display-line-numbers t)
     (f7-sidebar-mode)
 )
 

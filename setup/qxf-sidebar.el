@@ -12,13 +12,13 @@
     "The keymap for sidebar."
 )
 
-(defun f7-sidebar-mode ()
+(define-derived-mode f7-sidebar-mode special-mode "Sidebar"
     (kill-all-local-variables)
     (use-local-map qxf-sidebar-keymap)
     (setq
         major-mode 'f7-sidebar-mode
+        display-line-numbers t
         mode-name "Sidebar"
-        ;buffer-read-only t
     )
 )
 
