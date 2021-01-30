@@ -87,7 +87,7 @@
     )
 )
 
-(defun *get-file-contents (*file-path)
+(defun f7-get-file-contents (*file-path)
     (with-temp-buffer
         (insert-file-contents *file-path)
         (buffer-substring-no-properties (point-min) (point-max))

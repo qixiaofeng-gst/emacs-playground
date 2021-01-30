@@ -8,9 +8,9 @@
 (defconst g5-opened-buffers-record "~/.emacs.d/backup/opened-buffers-record.txt")
 (defvar qxf-insertion-templates
     (list
-        "f7" (*get-file-contents "~/.emacs.d/setup/function.template")
-        "c6" (*get-file-contents "~/.emacs.d/setup/command.template")
-        "m4" (*get-file-contents "~/.emacs.d/setup/macro.template")
+        "f7" (f7-get-file-contents "~/.emacs.d/setup/function.template")
+        "c6" (f7-get-file-contents "~/.emacs.d/setup/command.template")
+        "m4" (f7-get-file-contents "~/.emacs.d/setup/macro.template")
     )
 )
 
@@ -25,7 +25,7 @@
             (l4-list '())
             (l4-index 0)
         )
-        (dolist (l4-entry (*get-lines (*get-file-contents g5-opened-buffers-record)))
+        (dolist (l4-entry (*get-lines (f7-get-file-contents g5-opened-buffers-record)))
             (m4-insert-to-list (list l4-entry (vector :_closed_: l4-index)) l4-list)
             (++ l4-index)
         )
@@ -638,7 +638,7 @@
     (interactive)
     (let*
         (
-            (*lines (*get-lines (*get-file-contents qxf-focus-record)))
+            (*lines (*get-lines (f7-get-file-contents qxf-focus-record)))
             (*path-to-open (elt *lines 0))
             (*point (string-to-number (elt *lines 1)))
         )
@@ -897,14 +897,24 @@
                     )
                 )
             )
-            (*file-path (car l4-pair))
-            (*directory-path (file-name-directory *file-path))
+            (l4-file-path (car l4-pair))
+            (l4-directory-path (file-name-directory l4-file-path))
         )
         ; (message (format "While rendering buffer: %s" l4-buffer))
         (insert
             (format "[%-16s | %32s | %3d]\n"
                 (f7-clamp-string l4-buffer-name 16)
-                (f7-clamp-string (if (equal l4-buffer-name (symbol-name :_closed_:)) *file-path *directory-path) 32 t)
+                (f7-clamp-string
+                    (if
+                        (or
+                            (equal l4-buffer-name (symbol-name :_closed_:))
+                            (equal l4-buffer-name (symbol-name :_killed_:))
+                        )
+                        l4-file-path
+                        l4-directory-path
+                    )
+                    32 t
+                )
                 (aref l4-values 1)
             )
         )
