@@ -27,3 +27,6 @@
 (load-theme 'zenburn t)
 
 (qxf-msg (format "Loaded personal init.el cost %.3f seconds." (- (float-time) qxf-timestamp)))
+
+; (set-frame-font "Monospace-8" nil t)
+
