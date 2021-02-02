@@ -5,7 +5,7 @@
 
 (defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
 (defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
-(defconst g5-opened-buffers-record "~/.emacs.d/backup/opened-buffers-record.txt")
+(defconst g5-buffers-history-record "~/.emacs.d/backup/opened-buffers-record.txt")
 (defvar qxf-insertion-templates
     (list
         "f7" (f7-get-file-contents "~/.emacs.d/setup/function.template")
@@ -24,8 +24,20 @@
         (
             (l4-list '())
             (l4-index 0)
+            (l4-path-and-point nil)
+            (l4-point 0)
+            (l4-path nil)
         )
-        (dolist (l4-entry (*get-lines (f7-get-file-contents g5-opened-buffers-record)))
+        (dolist (l4-entry (*get-lines (f7-get-file-contents g5-buffers-history-record)))
+            (setq l4-path-and-point (split-string l4-entry "\s"))
+            (print l4-path-and-point)
+            (if (eq 2 (length l4-path-and-point))
+                (setq
+                    l4-path (elt l4-path-and-point 0)
+                    l4-point (elt l4-path-and-point 1)
+                )
+                (setq l4-path (elt l4-path-and-point 0))
+            )
             (m4-insert-to-list (list l4-entry (vector :_closed_: l4-index)) l4-list)
             (++ l4-index)
         )
@@ -45,7 +57,7 @@
 (add-hook 'kill-emacs-hook 'f7-save-opened-buffers)
 
 (defun f7-save-opened-buffers ()
-    (with-temp-file g5-opened-buffers-record
+    (with-temp-file g5-buffers-history-record
         (dolist (l4-buffer g5-opened-buffers)
             (insert (format "%s\n" (car l4-buffer)))
         )
@@ -890,7 +902,7 @@
             (l4-buffer (aref l4-values 0))
             (l4-buffer-name
                 (if (eq :_closed_: l4-buffer) (symbol-name :_closed_:)
-                    (if (null (buffer-name l4-buffer))
+                    (if (null (buffer-live-p l4-buffer))
                         (symbol-name :_killed_:)
                         (buffer-name l4-buffer)
                     )
