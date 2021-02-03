@@ -28,10 +28,11 @@ https://github.com/bbatsov/zenburn-emacs
 * Macro:    prefixed with m4-
 * Function: prefixed with f7-
 * Command:  prefixed with c6-
-* Variable: global ones          prefixed with g5-  
-            local ones           prefixed with l4-  
-            argument of function prefixed with a7-  
-            parameter of process prefixed with p8-
+* Variable:
+  * global ones          prefixed with g5-
+  * local ones           prefixed with l4-
+  * argument of function prefixed with a7-
+  * parameter of process prefixed with p8-
 
 ## Work log
 ### TODO
