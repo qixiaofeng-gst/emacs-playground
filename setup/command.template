@@ -1,5 +1,4 @@
-(defun c6-%s
-    ()
+(defun c6-%s ()
     (interactive)
     (princ "Command placeholder.")
     :defun-end
