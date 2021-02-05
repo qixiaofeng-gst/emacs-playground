@@ -37,9 +37,6 @@ https://github.com/bbatsov/zenburn-emacs
 ## Work log
 ### TODO
 * Record current point of buffers.
-* Create sidebar mode. refactor m4-bind.
-* kill-buffer command make sidebar entry name nil.
-* Conveniently open buffer throw opened-buffers-record.
 * Implement the project concept.
   1. Make the qxf-mic-array-root (actually is work-root) changeable.
   1. Way for search the project root, perhaps a hidden config file.
@@ -49,8 +46,8 @@ https://github.com/bbatsov/zenburn-emacs
   1. Add [C-c <down>] and [C-c <up>] for editor switch.
   1. Perhaps use blur hook of editor window to referesh the side-bar.
 * Varialble rename.
-* Made outline in function, macro and variable groups.
-* Investigate the batch mode.
+* Investigate the batch mode (run command/script in terminal).
+* Implement [C-c DEL] and [C-c d] to delete half line.
 * Implement [C-c s] and [C-c r], convenient search, extract keyword at current point.
 * Auto jump to definition/header/declaration.
 
@@ -94,6 +91,10 @@ https://github.com/bbatsov/zenburn-emacs
 * Implement function template.
 * Design naming convention for function, command, variable and macro.
 * Update opened-buffers-record but not overwrite.
+* kill-buffer command make sidebar entry name nil.
+* Create sidebar mode. refactor m4-bind.
+* Conveniently open buffer throw opened-buffers-record.
+* Made outline in function, macro and variable groups.
 
 ### Fixed
 * [C-c q] Spaces at line-end.
