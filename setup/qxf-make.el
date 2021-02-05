@@ -3,10 +3,10 @@
 (require 'qxf-sidebar)
 (require 'seq)
 
-(defconst qxf-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
-(defconst qxf-focus-record "~/.emacs.d/backup/focus-record.txt")
+(defconst g5-mic-array-root "/home/qixiaofeng/Documents/sandbox/hachi-mic-array")
+(defconst g5-focus-record "~/.emacs.d/backup/focus-record.txt")
 (defconst g5-buffers-history-record "~/.emacs.d/backup/opened-buffers-record.txt")
-(defvar qxf-insertion-templates
+(defconst g5-insertion-templates
     (list
         "f7" (f7-get-file-contents "~/.emacs.d/setup/function.template")
         "c6" (f7-get-file-contents "~/.emacs.d/setup/command.template")
@@ -14,11 +14,11 @@
     )
 )
 
-(defvar qxf-window-editor (frame-root-window))
-(defvar qxf-window-shell-out nil)
+(defvar g5-editor-window (frame-root-window))
+(defvar g5-shell-output-window nil)
 
-(defvar qxf-buffer-side-bar (get-buffer-create "*side-bar*"))
-(defvar qxf-window-side-bar nil)
+(defvar g5-left-pane-buffer (get-buffer-create "*side-bar*"))
+(defvar g5-left-pane-window nil)
 (defvar g5-opened-buffers
     (let*
         (
@@ -45,15 +45,15 @@
     )
 )
 
-(defvar qxf-string-cache "")
-(defvar qxf-code-indent 4)
+(defvar g5-string-cache "")
+(defvar g5-code-indent 4)
 
-(with-current-buffer qxf-buffer-side-bar
+(with-current-buffer g5-left-pane-buffer
     (f7-sidebar-mode)
 )
 
 (add-hook 'buffer-list-update-hook 'f7-update-opened-buffers)
-(add-hook 'kill-emacs-hook 'qxf-record-focus)
+(add-hook 'kill-emacs-hook 'f7-record-focus)
 (add-hook 'kill-emacs-hook 'f7-save-opened-buffers)
 
 (defun f7-save-opened-buffers ()
@@ -65,11 +65,11 @@
 )
 
 (defun f7-append-to-sidebar (a7-message)
-    (f7-append-to-buffer a7-message qxf-buffer-side-bar)
+    (f7-append-to-buffer a7-message g5-left-pane-buffer)
 )
 
 (defun f7-print-to-sidebar (a7-message)
-    (f7-print-to-buffer a7-message qxf-buffer-side-bar)
+    (f7-print-to-buffer a7-message g5-left-pane-buffer)
 )
 
 ; {[function] buffer-list &optional frame}
@@ -89,7 +89,7 @@
 ; {[Special Form] cond (condition [body-forms...])...}
 ; {[Function] buffer-size &optional buffer}
 
-(defun qxf-search-word ()
+(defun c6-search-word ()
     "Currently only single line supported."
     (declare (interactive-only t))
     (interactive)
@@ -101,7 +101,7 @@
     ; (isearch-repeat 'forward)
     :defun-end
 )
-(m4-bind "C-c s" qxf-search-word)
+(m4-bind "C-c s" c6-search-word)
 
 (defun c6-open-with-sidebar-index (a7-index)
     (interactive "nSidebar index of file to open:")
@@ -135,23 +135,7 @@
     )
 )
 
-(defun qxf-jump-to-previous-empty-line ()
-    (interactive)
-    (re-search-backward "\n\n")
-    (forward-char)
-    :defun-end
-)
-(m4-bind "C-c -" qxf-jump-to-previous-empty-line)
-
-(defun qxf-jump-to-next-empty-line ()
-    (interactive)
-    (re-search-forward "\n\n")
-    (backward-char)
-    :defun-end
-)
-(m4-bind "C-c _" qxf-jump-to-next-empty-line)
-
-(defun qxf-auto-insert-parentheses ()
+(defun c6-insert-parentheses ()
     (interactive)
     (let*
         (
@@ -171,14 +155,14 @@
     )
     :defun-end
 )
-(m4-bind "C-c (" qxf-auto-insert-parentheses)
+(m4-bind "C-c (" c6-insert-parentheses)
 
 (defun f7-auto-insert-paired (a7-pair)
     (insert a7-pair)
     (backward-char)
 )
 
-(defun qxf-auto-expand-empty-line ()
+(defun c6-expand-empty-line ()
     (interactive)
     (let*
         (
@@ -191,30 +175,30 @@
     )
     :defun-end
 )
-(m4-bind "C-c C-j" qxf-auto-expand-empty-line)
+(m4-bind "C-c C-j" c6-expand-empty-line)
 
-(defun qxf-auto-insert-double-quotes ()
+(defun c6-insert-double-quotes ()
     (interactive)
     (f7-auto-insert-paired "\"\"")
     :defun-end
 )
-(m4-bind "C-c \"" qxf-auto-insert-double-quotes)
+(m4-bind "C-c \"" c6-insert-double-quotes)
 
-(defun qxf-auto-insert-brackets ()
+(defun c6-insert-brackets ()
     (interactive)
     (f7-auto-insert-paired "[]")
     :defun-end
 )
-(m4-bind "C-c [" qxf-auto-insert-brackets)
+(m4-bind "C-c [" c6-insert-brackets)
 
-(defun qxf-auto-insert-braces ()
+(defun c6-insert-braces ()
     (interactive)
     (f7-auto-insert-paired "{}")
     :defun-end
 )
-(m4-bind "C-c {" qxf-auto-insert-braces)
+(m4-bind "C-c {" c6-insert-braces)
 
-(defun qxf-kill-line ()
+(defun c6-kill-line ()
     (interactive)
     (beginning-of-line)
     (kill-line)
@@ -222,9 +206,10 @@
     (end-of-line)
     :defun-end
 )
-(m4-bind "C-c k" qxf-kill-line)
+(m4-bind "C-c k" c6-kill-line)
 
-(defun qxf-backtab-trim-inner-spaces ()
+(defun c6-backtab ()
+    "Used to trim inner spaces in a line."
     (interactive)
     (let*
         (
@@ -269,20 +254,20 @@
         (delete-region (line-beginning-position) (line-end-position))
         (insert l4-result)
         (backward-char)
-        (qxf-format-lisp)
+        (c6-format-lisp)
     )
     :defun-end
 )
-(m4-bind "<backtab>" qxf-backtab-trim-inner-spaces)
+(m4-bind "<backtab>" c6-backtab)
 
-(defun qxf-jump-to-nearest-block-start ()
+(defun c6-jump-to-nearest-block-start ()
     (interactive)
     (goto-char (+ 2 (f7-get-nearest-block-start (buffer-string) (- (point) 1))))
     :defun-end
 )
-(m4-bind "C-c b" qxf-jump-to-nearest-block-start)
+(m4-bind "C-c b" c6-jump-to-nearest-block-start)
 
-(defun qxf-jump-to-nearest-block-end ()
+(defun c6-jump-to-nearest-block-end ()
     (interactive)
     :insert-for-test
     (let*
@@ -294,28 +279,9 @@
     )
     :defun-end
 )
-(m4-bind "C-c f" qxf-jump-to-nearest-block-end)
+(m4-bind "C-c f" c6-jump-to-nearest-block-end)
 
-(defun qxf-test-scan-text ()
-    (interactive)
-    (f7-print-to-sidebar "qxf-test-scan-text")
-    (f7-append-to-sidebar (format "====>>> %s" (f7-scan-for-unpaired "(hello\")\"=====")))
-    (f7-append-to-sidebar (format "====>>> %s" (f7-scan-for-unpaired "(hello\")()(\"world)!")))
-    (f7-append-to-sidebar (format "====>>> %s" (f7-scan-for-unpaired "(hello\"))")))
-    (f7-append-to-sidebar (format "====>>> %s" (f7-scan-for-unpaired "(hello")))
-    (f7-append-to-sidebar (format "====>>> %s" (f7-scan-for-unpaired "(hello\")\")")))
-    (f7-append-to-sidebar (format "====>>> %s" (f7-scan-for-unpaired "(hello()")))
-    (f7-append-to-sidebar (format "====>>> %s" (f7-scan-for-unpaired "(hello())")))
-    (f7-append-to-sidebar (format "====>>> %s" (f7-scan-for-unpaired "(hello())\;")))
-    (f7-append-to-sidebar (format "====>>> %s" (f7-scan-for-unpaired "(hello())\"")))
-    (f7-append-to-sidebar (format "====>>> %s" (f7-scan-for-unpaired "(hello())(")))
-    (f7-append-to-sidebar (format "%s" (eq 1 1)))
-    (f7-append-to-sidebar (format "%s" (eq "a" "a")))
-    :defun-end
-)
-(m4-bind "C-c t" qxf-test-scan-text)
-
-(defun qxf-temporary-test ()
+(defun c6-temporary-test ()
     (interactive)
     (let
         (
@@ -346,26 +312,26 @@
         (fset 'l4-f7-out (lambda (a7-msg) (setq l4-to-print (format "%s%s\n" l4-to-print a7-msg))))
         (f7-print-to-sidebar "Atomic test start.")
         ; Test for property list.
-        (prin1 (plist-get (elt l4-test-list 0) :line-number) qxf-buffer-side-bar)
-        (print (l4-test-map :one) qxf-buffer-side-bar)
-        (prin1 (car l4-cons) qxf-buffer-side-bar)
-        (print (cdr l4-cons) qxf-buffer-side-bar)
+        (prin1 (plist-get (elt l4-test-list 0) :line-number) g5-left-pane-buffer)
+        (print (l4-test-map :one) g5-left-pane-buffer)
+        (prin1 (car l4-cons) g5-left-pane-buffer)
+        (print (cdr l4-cons) g5-left-pane-buffer)
         (l4-test-map :one 111)
-        (prin1 (plist-get l4-test-map :one) qxf-buffer-side-bar)
+        (prin1 (plist-get l4-test-map :one) g5-left-pane-buffer)
         (l4-test-map :three 333)
-        (print (l4-test-map :three) qxf-buffer-side-bar)
-        (prin1 (l4-test-map :line-number) qxf-buffer-side-bar)
-        (print (l4-test-map :signature) qxf-buffer-side-bar)
+        (print (l4-test-map :three) g5-left-pane-buffer)
+        (prin1 (l4-test-map :line-number) g5-left-pane-buffer)
+        (print (l4-test-map :signature) g5-left-pane-buffer)
         ; Test for with-temp-buffer
-        (prin1 l4-f7-test qxf-buffer-side-bar)
-        (prin1 l4-string qxf-buffer-side-bar)
+        (prin1 l4-f7-test g5-left-pane-buffer)
+        (prin1 l4-string g5-left-pane-buffer)
         (setq l4-lines (f7-get-lines l4-string))
         (dolist (l4-line l4-lines)
-            (princ l4-line qxf-buffer-side-bar)
+            (princ l4-line g5-left-pane-buffer)
         )
-        (print l4-readed qxf-buffer-side-bar)
-        (prin1 l4-readed-a qxf-buffer-side-bar)
-        (print l4-readed-b qxf-buffer-side-bar)
+        (print l4-readed g5-left-pane-buffer)
+        (prin1 l4-readed-a g5-left-pane-buffer)
+        (print l4-readed-b g5-left-pane-buffer)
         ; Test for other things.
         (princ "test print" l4-f7-test)
         (l4-f7-out "=======")
@@ -387,16 +353,16 @@
     )
     :defun-end
 )
-(m4-bind "C-c t" qxf-temporary-test)
+(m4-bind "C-c t" c6-temporary-test)
 
-(defun qxf-create-newline ()
+(defun c6-create-newline ()
     (interactive)
     (let*
         (
             (l4-limit (f7-get-nearest-block-start (buffer-string) (point)))
         )
         (insert "\n")
-        (qxf-format-lisp)
+        (c6-format-lisp)
         (forward-line 2)
         (if (eq nil (re-search-backward "\n\s+\n" l4-limit t))
             (forward-line -2)
@@ -406,7 +372,7 @@
     )
     :defun-end
 )
-(m4-bind "C-c j" qxf-create-newline)
+(m4-bind "C-c j" c6-create-newline)
 
 (defun f7-format-form (a7-string-form &optional a7-indent)
     (when (eq nil a7-indent)
@@ -415,7 +381,7 @@
     (setq a7-string-form (f7-trim-string a7-string-form))
     (let*
         (
-            (l4-indent-string (make-string (* a7-indent qxf-code-indent) ?\s))
+            (l4-indent-string (make-string (* a7-indent g5-code-indent) ?\s))
             (l4-first-newline-index (f7-get-newline-index a7-string-form 0 :forward))
             (l4-unpaired-index nil)
             (l4-unpaired-char nil)
@@ -491,7 +457,7 @@
     )
 )
 
-(defun qxf-format-lisp ()
+(defun c6-format-lisp ()
     (interactive)
     (let*
         (
@@ -512,9 +478,9 @@
     )
     :defun-end
 )
-(m4-bind "C-c q" qxf-format-lisp)
+(m4-bind "C-c q" c6-format-lisp)
 
-(defun qxf-duplicate-line ()
+(defun c6-duplicate-line ()
     (interactive)
     (let
         (
@@ -531,9 +497,9 @@
     )
     :defun-end
 )
-(m4-bind "C-c d" qxf-duplicate-line)
+(m4-bind "C-c d" c6-duplicate-line)
 
-(defun qxf-focus-line-beginning ()
+(defun c6-focus-line-beginning ()
     (interactive)
     (beginning-of-line)
     (goto-char (1- (re-search-forward "[^[:space:]]")))
@@ -542,7 +508,7 @@
     )
     :defun-end
 )
-(m4-bind "C-c a" qxf-focus-line-beginning)
+(m4-bind "C-c a" c6-focus-line-beginning)
 
 (defmacro m4-cut-current-line (a7-variable)
     `(let*
@@ -559,7 +525,7 @@
     )
 )
 
-(defun qxf-move-line-down ()
+(defun c6-move-line-down ()
     (interactive)
     (let*
         (
@@ -573,9 +539,9 @@
     )
     :defun-end
 )
-(m4-bind "C-c n" qxf-move-line-down)
+(m4-bind "C-c n" c6-move-line-down)
 
-(defun qxf-move-line-up ()
+(defun c6-move-line-up ()
     (interactive)
     (let
         (
@@ -589,59 +555,53 @@
     )
     :defun-end
 )
-(m4-bind "C-c p" qxf-move-line-up)
+(m4-bind "C-c p" c6-move-line-up)
 
-(defun qxf-copy-region ()
+(defun c6-copy-region ()
     (interactive)
-    (setq qxf-string-cache (buffer-substring (region-beginning) (region-end)))
+    (setq g5-string-cache (buffer-substring (region-beginning) (region-end)))
     (deactivate-mark t)
 )
-(m4-bind "C-c c" qxf-copy-region)
+(m4-bind "C-c c" c6-copy-region)
 
-(defun qxf-paste ()
+(defun c6-paste ()
     (interactive)
-    (insert qxf-string-cache)
+    (insert g5-string-cache)
 )
-(m4-bind "C-c y" qxf-paste)
+(m4-bind "C-c y" c6-paste)
 
-(defun f7-record-current-buffer (a7-buffer a7-point)
+(defun f7-record-buffer-focus (a7-buffer a7-point)
     (let*
         (
             (l4-to-save (format "%s\n%d\n" (buffer-file-name a7-buffer) a7-point))
         )
-        (with-temp-file qxf-focus-record (insert l4-to-save))
+        (with-temp-file g5-focus-record (insert l4-to-save))
     )
 )
+(defun f7-record-focus () (f7-record-buffer-focus (current-buffer) (point)))
 
-(defun qxf-record-focus ()
-    (interactive)
-    (f7-record-current-buffer (current-buffer) (point))
-    (princ "Recorded current focus.")
-)
-(m4-bind "C-c DEL" qxf-record-focus)
-
-(defun qxf-load-record ()
+(defun c6-load-record ()
     (interactive)
     (let*
         (
-            (l4-lines (f7-get-lines (f7-get-file-contents qxf-focus-record)))
+            (l4-lines (f7-get-lines (f7-get-file-contents g5-focus-record)))
             (l4-path-to-open (elt l4-lines 0))
             (l4-point (string-to-number (elt l4-lines 1)))
         )
-        (qxf-focus-editor)
+        (c6-focus-editor)
         (find-file l4-path-to-open)
         (goto-char l4-point)
         (princ "Loaded focus record.")
     )
 )
-(m4-bind "C-c =" qxf-load-record)
+(m4-bind "C-c =" c6-load-record)
 
-(defun qxf-focus-editor ()
+(defun c6-focus-editor ()
     (interactive)
-    (select-window qxf-window-editor)
+    (select-window g5-editor-window)
     (f7-render-sidebar)
 )
-(m4-bind "C-c e" qxf-focus-editor)
+(m4-bind "C-c e" c6-focus-editor)
 
 (defun f7-list-outmost-blocks ()
     (let*
@@ -727,31 +687,31 @@
     )
 )
 
-(defun qxf-render-lisp-outline ()
+(defun c6-render-lisp-outline ()
     (interactive)
     (f7-print-to-sidebar "所有定义：")
     (f7-parse-defined-names (f7-list-outmost-blocks))
 )
-(m4-bind "C-c |" qxf-render-lisp-outline)
+(m4-bind "C-c |" c6-render-lisp-outline)
 
-(defun qxf-focus-side-bar ()
+(defun c6-focus-side-bar ()
     (interactive)
     (f7-render-sidebar)
 )
-(m4-bind "C-c \\" qxf-focus-side-bar)
+(m4-bind "C-c \\" c6-focus-side-bar)
 
-(defun qxf-make-mic-array ()
+(defun c6-make-mic-array ()
     (interactive)
-    (shell-command (format "date && cd %s/build && make -j 8 && ./listdevs" qxf-mic-array-root))
+    (shell-command (format "date && cd %s/build && make -j 8 && ./listdevs" g5-mic-array-root))
 )
-(m4-bind "C-c 1" qxf-make-mic-array)
+(m4-bind "C-c 1" c6-make-mic-array)
 
-(defun qxf-cmake-mic-array ()
+(defun c6-cmake-mic-array ()
     (interactive)
-    (shell-command (format "date && cd %s/build && cmake .." qxf-mic-array-root))
+    (shell-command (format "date && cd %s/build && cmake .." g5-mic-array-root))
     :defun-end
 )
-(m4-bind "C-c 2" qxf-cmake-mic-array)
+(m4-bind "C-c 2" c6-cmake-mic-array)
 
 (defun c6-toggle-debug-error ()
     (interactive)
@@ -763,57 +723,56 @@
 )
 (define-key global-map (kbd "C-c 3") 'c6-toggle-debug-error)
 
-(defun qxf-set-c-offset ()
+(defun c6-set-c-offset ()
     (interactive)
     (set-variable 'c-basic-offset 4)
 )
-(m4-bind "C-c 4" qxf-set-c-offset)
+(m4-bind "C-c 4" c6-set-c-offset)
 
-(defun qxf-layout-3-pane ()
+(defun c6-layout-3-pane ()
     (interactive)
-    (qxf-focus-editor)
+    (c6-focus-editor)
     (delete-other-windows)
-    ; (find-file (format "%s/src/listdevs.c" qxf-mic-array-root))
     (shell-command "echo Make shell area.")
-    (setq qxf-window-shell-out (split-window nil -20 'below))
-    (set-window-buffer qxf-window-shell-out "*Shell Command Output*")
-    (setq qxf-window-side-bar
+    (setq g5-shell-output-window (split-window nil -20 'below))
+    (set-window-buffer g5-shell-output-window "*Shell Command Output*")
+    (setq g5-left-pane-window
         (split-window nil (+ 120 (f7-get-line-number-width))
             'left
         )
     )
-    (set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
+    (set-window-buffer g5-left-pane-window g5-left-pane-buffer)
     (f7-render-sidebar)
     (shell-command "echo Initialized shell area.")
 )
-(m4-bind "C-c 0" qxf-layout-3-pane)
+(m4-bind "C-c 0" c6-layout-3-pane)
 
-(defun qxf-layout-2-pane ()
+(defun c6-layout-2-pane ()
     (interactive)
-    (qxf-focus-editor)
+    (c6-focus-editor)
     (delete-other-windows)
-    (setq qxf-window-side-bar
+    (setq g5-left-pane-window
         (split-window nil (+ 120 (f7-get-line-number-width))
             'left
         )
     )
-    (set-window-buffer qxf-window-side-bar qxf-buffer-side-bar)
+    (set-window-buffer g5-left-pane-window g5-left-pane-buffer)
     (f7-render-sidebar)
     :defun-end
 )
-(m4-bind "C-c 9" qxf-layout-2-pane)
+(m4-bind "C-c 9" c6-layout-2-pane)
 
-(defun qxf-insert-command (a7-template-type a7-command-name)
+(defun c6-insert-command (a7-template-type a7-command-name)
     (interactive "sTemplate-type:\nsTarget-name:")
     (insert
         (format
-            (lax-plist-get qxf-insertion-templates a7-template-type)
+            (lax-plist-get g5-insertion-templates a7-template-type)
             a7-command-name a7-command-name
         )
     )
     :defun-end
 )
-(m4-bind "C-c i" qxf-insert-command)
+(m4-bind "C-c i" c6-insert-command)
 
 (defun f7-get-line-number-width ()
     (+ 2 (length (format "%d" (count-lines (point-min) (point-max)))))
@@ -849,7 +808,7 @@
 )
 
 (defun f7-render-sidebar ()
-    (with-current-buffer qxf-buffer-side-bar
+    (with-current-buffer g5-left-pane-buffer
         (let ((buffer-read-only nil))
             (erase-buffer)
             (insert (format "%s\n" (current-time-string)))
